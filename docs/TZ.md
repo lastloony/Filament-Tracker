@@ -30,7 +30,8 @@ filament-tracker/
 │   │       └── stats.py       # /stats/*
 │   ├── alembic/
 │   ├── alembic.ini
-│   ├── requirements.txt
+│   ├── pyproject.toml      # зависимости и метаданные (менеджер пакетов — uv)
+│   ├── uv.lock
 │   └── Dockerfile
 ├── frontend/
 │   ├── src/
