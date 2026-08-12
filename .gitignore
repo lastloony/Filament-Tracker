@@ -214,5 +214,7 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
+# caddy — реальный конфиг с доменом, не коммитить
+caddy/Caddyfile
 # Streamlit
 .streamlit/secrets.toml
