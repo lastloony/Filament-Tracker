@@ -57,8 +57,14 @@ class FilamentRead(FilamentBase):
 class StatsByGroup(BaseModel):
     group: str
     total_spent: Decimal
+    remaining_g: int
     count: int
     avg_rating: float | None
+
+
+class StatsByRating(BaseModel):
+    rating: int | None
+    count: int
 
 
 class StatsSummary(BaseModel):

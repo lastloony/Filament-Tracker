@@ -64,6 +64,7 @@ def _stats_by_field(db: Session, field) -> list[Row]:
         select(
             field,
             func.coalesce(func.sum(models.Filament.price), 0),
+            func.coalesce(func.sum(models.Filament.weight_remaining_g), 0),
             func.count(models.Filament.id),
             func.avg(models.Filament.rating),
         )
@@ -79,6 +80,15 @@ def stats_by_brand(db: Session) -> list[Row]:
 
 def stats_by_material(db: Session) -> list[Row]:
     return _stats_by_field(db, models.Filament.material)
+
+
+def stats_by_rating(db: Session) -> list[Row]:
+    query = (
+        select(models.Filament.rating, func.count(models.Filament.id))
+        .group_by(models.Filament.rating)
+        .order_by(models.Filament.rating)
+    )
+    return list(db.execute(query).all())
 
 
 def stats_summary(db: Session) -> Row:

@@ -1,10 +1,11 @@
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app import schemas
 from app.auth import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     COOKIE_NAME,
     create_access_token,
+    get_current_user,
     verify_password,
 )
 from app.config import settings
@@ -36,3 +37,8 @@ def login(data: schemas.LoginRequest, response: Response):
 def logout(response: Response):
     response.delete_cookie(COOKIE_NAME)
     return {"status": "ok"}
+
+
+@router.get("/me")
+def me(username: str = Depends(get_current_user)):
+    return {"username": username}

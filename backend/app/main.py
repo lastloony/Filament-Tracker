@@ -1,7 +1,7 @@
 import tomllib
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import APIRouter, FastAPI
 
 from app.routers import auth, filaments, stats
 
@@ -15,16 +15,24 @@ def _read_version() -> str:
 
 
 app = FastAPI(title="Filament Tracker", version=_read_version())
-app.include_router(auth.router)
-app.include_router(filaments.router)
-app.include_router(stats.router)
+
+# Caddy проксирует /api/* на backend (см. caddy/Caddyfile.example), поэтому
+# все роуты, включая health/version, живут под этим префиксом.
+api_router = APIRouter(prefix="/api")
 
 
-@app.get("/health")
+@api_router.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.get("/version")
+@api_router.get("/version")
 def version() -> dict[str, str]:
     return {"version": app.version}
+
+
+api_router.include_router(auth.router)
+api_router.include_router(filaments.router)
+api_router.include_router(stats.router)
+
+app.include_router(api_router)
