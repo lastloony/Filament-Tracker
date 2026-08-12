@@ -3,6 +3,8 @@ from pathlib import Path
 
 from fastapi import FastAPI
 
+from app.routers import auth, filaments, stats
+
 _PYPROJECT_PATH = Path(__file__).resolve().parent.parent / "pyproject.toml"
 
 
@@ -13,6 +15,9 @@ def _read_version() -> str:
 
 
 app = FastAPI(title="Filament Tracker", version=_read_version())
+app.include_router(auth.router)
+app.include_router(filaments.router)
+app.include_router(stats.router)
 
 
 @app.get("/health")
