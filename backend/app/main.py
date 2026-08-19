@@ -3,7 +3,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, FastAPI
 
-from app.routers import auth, filaments, stats
+from app.routers import auth, filaments, settings, stats
 
 _PYPROJECT_PATH = Path(__file__).resolve().parent.parent / "pyproject.toml"
 
@@ -33,6 +33,7 @@ def version() -> dict[str, str]:
 
 api_router.include_router(auth.router)
 api_router.include_router(filaments.router)
+api_router.include_router(settings.router)
 api_router.include_router(stats.router)
 
 app.include_router(api_router)

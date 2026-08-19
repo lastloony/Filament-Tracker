@@ -19,13 +19,14 @@ backend/
     main.py          # FastAPI app, роуты смонтированы под /api
     config.py         # настройки из .env
     database.py        # engine, SessionLocal, get_db
-    models.py         # SQLAlchemy-модель Filament
+    models.py         # SQLAlchemy-модели: Filament, Brand, Material, Currency
     schemas.py         # Pydantic-схемы
     crud.py           # CRUD + агрегации для статистики
     auth.py           # JWT, bcrypt, get_current_user
     routers/
       auth.py          # /api/auth/login, /logout, /me
       filaments.py       # /api/filaments CRUD
+      settings.py        # /api/settings/brands, /materials, /currencies
       stats.py          # /api/stats/*
   alembic/            # миграции БД
   pyproject.toml / uv.lock
@@ -34,7 +35,7 @@ backend/
 frontend/
   src/
     api/              # обёртки над fetch к /api/*
-    pages/             # Login, FilamentList, FilamentForm, Stats
+    pages/             # Login, FilamentList, FilamentForm, Stats, Settings
     App.tsx            # роутинг, проверка сессии
   nginx.conf           # раздача статики + прокси /api для локального docker compose
   Dockerfile
@@ -55,7 +56,8 @@ docs/
 - CRUD катушек (`/api/filaments`): фильтры по бренду/материалу, сортировка, пагинация, `price_per_kg` считается на лету
 - Авторизация: логин/логаут, JWT в httpOnly cookie, все `/api/filaments/*` и `/api/stats/*` защищены
 - Статистика (`/api/stats/*`): расходы и остаток по брендам/материалам, распределение рейтингов, общая сводка
-- Фронтенд: страница логина, таблица катушек с инлайн-редактированием остатка, форма добавления/редактирования, страница статистики с графиками
+- Настройки (`/api/settings/*`): справочники брендов, типов филамента и валют — просмотр и добавление новых значений; одна валюта помечена как базовая (по умолчанию RUB), её можно сменить
+- Фронтенд: страница логина, таблица катушек с инлайн-редактированием остатка, форма добавления/редактирования (бренд/материал/валюта — подсказки из справочников настроек), страница статистики с графиками, страница настроек
 - Docker: отдельные образы backend (uv, миграции накатываются при старте контейнера) и frontend (multi-stage, nginx), полная сборка через `docker-compose.yml` с Caddy как единственной точкой входа
 
 Не реализовано / отложено — см. [`docs/ROADMAP.md`](docs/ROADMAP.md).

@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { createFilament, getFilament, updateFilament, type FilamentInput } from '../api/filaments'
 import { ApiError } from '../api/client'
-import { MATERIALS } from '../materials'
+import { listBrands, listCurrencies, listMaterials, type Brand, type Currency, type Material } from '../api/settings'
 
 const EMPTY_FORM: FilamentInput = {
   brand: '',
@@ -11,7 +11,7 @@ const EMPTY_FORM: FilamentInput = {
   weight_total_g: 1000,
   weight_remaining_g: 1000,
   price: '',
-  currency: 'EUR',
+  currency: 'RUB',
   rating: null,
   vendor: '',
   purchase_date: '',
@@ -27,6 +27,21 @@ export function FilamentForm() {
   const [isLoading, setIsLoading] = useState(isEditing)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [materials, setMaterials] = useState<Material[]>([])
+  const [currencies, setCurrencies] = useState<Currency[]>([])
+
+  useEffect(() => {
+    Promise.all([listBrands(), listMaterials(), listCurrencies()]).then(([b, m, c]) => {
+      setBrands(b)
+      setMaterials(m)
+      setCurrencies(c)
+      if (!isEditing) {
+        const base = c.find((currency) => currency.is_base)
+        if (base) setForm((prev) => ({ ...prev, currency: base.code }))
+      }
+    })
+  }, [isEditing])
 
   useEffect(() => {
     if (!isEditing) return
@@ -91,10 +106,16 @@ export function FilamentForm() {
         Бренд
         <input
           type="text"
+          list="brands"
           value={form.brand}
           onChange={(e) => updateField('brand', e.target.value)}
           required
         />
+        <datalist id="brands">
+          {brands.map((b) => (
+            <option key={b.id} value={b.name} />
+          ))}
+        </datalist>
       </label>
 
       <label>
@@ -107,8 +128,8 @@ export function FilamentForm() {
           required
         />
         <datalist id="materials">
-          {MATERIALS.map((m) => (
-            <option key={m} value={m} />
+          {materials.map((m) => (
+            <option key={m.id} value={m.name} />
           ))}
         </datalist>
       </label>
@@ -159,11 +180,17 @@ export function FilamentForm() {
           Валюта
           <input
             type="text"
+            list="currencies"
             value={form.currency}
             onChange={(e) => updateField('currency', e.target.value.toUpperCase())}
             maxLength={3}
             required
           />
+          <datalist id="currencies">
+            {currencies.map((c) => (
+              <option key={c.id} value={c.code} />
+            ))}
+          </datalist>
         </label>
       </div>
 

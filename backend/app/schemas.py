@@ -54,6 +54,49 @@ class FilamentRead(FilamentBase):
         return round(self.price / (Decimal(self.weight_total_g) / 1000), 2)
 
 
+class BrandBase(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+
+
+class BrandCreate(BrandBase):
+    pass
+
+
+class BrandRead(BrandBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+
+
+class MaterialBase(BaseModel):
+    name: str = Field(min_length=1, max_length=50)
+
+
+class MaterialCreate(MaterialBase):
+    pass
+
+
+class MaterialRead(MaterialBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+
+
+class CurrencyBase(BaseModel):
+    code: str = Field(min_length=3, max_length=3)
+
+
+class CurrencyCreate(CurrencyBase):
+    pass
+
+
+class CurrencyRead(CurrencyBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    is_base: bool
+
+
 class StatsByGroup(BaseModel):
     group: str
     total_spent: Decimal

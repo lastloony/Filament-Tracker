@@ -4,6 +4,7 @@ import { Login } from './pages/Login'
 import { FilamentList } from './pages/FilamentList'
 import { FilamentForm } from './pages/FilamentForm'
 import { Stats } from './pages/Stats'
+import { Settings } from './pages/Settings'
 import { logout as apiLogout, me } from './api/auth'
 
 type AuthState = 'checking' | 'authenticated' | 'anonymous'
@@ -37,6 +38,7 @@ function App() {
             <div className="nav-links">
               <Link to="/filaments">Филамент</Link>
               <Link to="/stats">Статистика</Link>
+              <Link to="/settings">Настройки</Link>
             </div>
             <button
               type="button"
@@ -55,6 +57,7 @@ function App() {
               <Route path="/filaments/new" element={<FilamentForm />} />
               <Route path="/filaments/:id/edit" element={<FilamentForm />} />
               <Route path="/stats" element={<Stats />} />
+              <Route path="/settings" element={<Settings />} />
             </Routes>
           </main>
         </div>

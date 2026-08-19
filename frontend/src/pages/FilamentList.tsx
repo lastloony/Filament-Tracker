@@ -9,7 +9,7 @@ import {
 } from '@tanstack/react-table'
 import { deleteFilament, listFilaments, updateFilament, type Filament } from '../api/filaments'
 import { ApiError } from '../api/client'
-import { MATERIALS } from '../materials'
+import { listMaterials, type Material } from '../api/settings'
 
 const PAGE_SIZE = 50
 const SORTABLE_FIELDS = new Set(['brand', 'price', 'rating', 'weight_remaining_g', 'created_at'])
@@ -71,8 +71,13 @@ export function FilamentList() {
   const [material, setMaterial] = useState('')
   const [offset, setOffset] = useState(0)
   const [sorting, setSorting] = useState<SortingState>([{ id: 'created_at', desc: true }])
+  const [materials, setMaterials] = useState<Material[]>([])
 
   const sort = sorting[0]
+
+  useEffect(() => {
+    listMaterials().then(setMaterials)
+  }, [])
 
   const refetch = useCallback(() => {
     setIsLoading(true)
@@ -174,9 +179,9 @@ export function FilamentList() {
           }}
         >
           <option value="">Все материалы</option>
-          {MATERIALS.map((m) => (
-            <option key={m} value={m}>
-              {m}
+          {materials.map((m) => (
+            <option key={m.id} value={m.name}>
+              {m.name}
             </option>
           ))}
         </select>

@@ -1,4 +1,4 @@
-from sqlalchemy import func, select
+from sqlalchemy import func, select, update
 from sqlalchemy.engine import Row
 from sqlalchemy.orm import Session
 
@@ -98,3 +98,51 @@ def stats_summary(db: Session) -> Row:
         func.avg(models.Filament.rating),
     )
     return db.execute(query).one()
+
+
+def list_brands(db: Session) -> list[models.Brand]:
+    return list(db.execute(select(models.Brand).order_by(models.Brand.name)).scalars())
+
+
+def create_brand(db: Session, data: schemas.BrandCreate) -> models.Brand:
+    brand = models.Brand(name=data.name.strip())
+    db.add(brand)
+    db.commit()
+    db.refresh(brand)
+    return brand
+
+
+def list_materials(db: Session) -> list[models.Material]:
+    return list(db.execute(select(models.Material).order_by(models.Material.name)).scalars())
+
+
+def create_material(db: Session, data: schemas.MaterialCreate) -> models.Material:
+    material = models.Material(name=data.name.strip())
+    db.add(material)
+    db.commit()
+    db.refresh(material)
+    return material
+
+
+def list_currencies(db: Session) -> list[models.Currency]:
+    return list(db.execute(select(models.Currency).order_by(models.Currency.code)).scalars())
+
+
+def get_currency(db: Session, currency_id: int) -> models.Currency | None:
+    return db.get(models.Currency, currency_id)
+
+
+def create_currency(db: Session, data: schemas.CurrencyCreate) -> models.Currency:
+    currency = models.Currency(code=data.code.strip().upper())
+    db.add(currency)
+    db.commit()
+    db.refresh(currency)
+    return currency
+
+
+def set_base_currency(db: Session, currency: models.Currency) -> models.Currency:
+    db.execute(update(models.Currency).values(is_base=False))
+    currency.is_base = True
+    db.commit()
+    db.refresh(currency)
+    return currency
