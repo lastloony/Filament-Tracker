@@ -64,6 +64,14 @@ docs/
 
 ## Локальный запуск
 
+### Вариант 0 — один скрипт (Windows, PowerShell)
+
+```powershell
+.\scripts\dev.ps1
+```
+
+Проверяет `python`/`uv`/`npm` в PATH, при первом запуске создаёт `backend/.env` из `.env.example` и просит его заполнить (см. хэш пароля ниже), затем сам делает `uv sync` + `alembic upgrade head` и `npm install`, поднимает backend и frontend каждый в своём окне PowerShell и открывает `localhost:5173` в браузере. По сути автоматизирует «Вариант 1» ниже — Docker он не трогает.
+
 ### Вариант 1 — напрямую
 
 Backend:
