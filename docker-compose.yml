@@ -1,8 +1,30 @@
 services:
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+    depends_on:
+      - backend
+      - frontend
+
   backend:
     build: ./backend
     volumes:
       - ./data:/app/data
     env_file: .env
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - backend
+    expose:
+      - "80"
+
+volumes:
+  caddy_data:
