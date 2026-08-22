@@ -1,13 +1,15 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { createFilament, getFilament, updateFilament, type FilamentInput } from '../api/filaments'
 import { ApiError } from '../api/client'
 import { listBrands, listCurrencies, listMaterials, type Brand, type Currency, type Material } from '../api/settings'
+import { COLOR_PALETTE, nearestColorName } from '../colors'
 
 const EMPTY_FORM: FilamentInput = {
   brand: '',
   material: '',
   color: '',
+  color_hex: null,
   weight_total_g: 1000,
   weight_remaining_g: 1000,
   price: '',
@@ -30,6 +32,7 @@ export function FilamentForm() {
   const [brands, setBrands] = useState<Brand[]>([])
   const [materials, setMaterials] = useState<Material[]>([])
   const [currencies, setCurrencies] = useState<Currency[]>([])
+  const colorInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     Promise.all([listBrands(), listMaterials(), listCurrencies()]).then(([b, m, c]) => {
@@ -51,6 +54,7 @@ export function FilamentForm() {
           brand: filament.brand,
           material: filament.material,
           color: filament.color ?? '',
+          color_hex: filament.color_hex,
           weight_total_g: filament.weight_total_g,
           weight_remaining_g: filament.weight_remaining_g,
           price: filament.price,
@@ -98,6 +102,8 @@ export function FilamentForm() {
 
   if (isLoading) return <p>Загрузка...</p>
 
+  const isCustomColor = form.color_hex !== null && !COLOR_PALETTE.some((c) => c.hex === form.color_hex)
+
   return (
     <form className="filament-form" onSubmit={handleSubmit}>
       <h1>{isEditing ? 'Редактировать катушку' : 'Новая катушка'}</h1>
@@ -136,7 +142,48 @@ export function FilamentForm() {
 
       <label>
         Цвет
-        <input type="text" value={form.color ?? ''} onChange={(e) => updateField('color', e.target.value)} />
+        <div className="color-palette">
+          {COLOR_PALETTE.map((c) => (
+            <button
+              key={c.hex}
+              type="button"
+              className={`color-palette-swatch${form.color_hex === c.hex ? ' selected' : ''}`}
+              style={{ background: c.hex }}
+              title={c.name}
+              aria-label={c.name}
+              onClick={() => setForm((prev) => ({ ...prev, color: c.name, color_hex: c.hex }))}
+            />
+          ))}
+          <button
+            type="button"
+            className={`color-palette-custom${isCustomColor ? ' selected' : ''}`}
+            style={isCustomColor ? { background: form.color_hex ?? undefined } : undefined}
+            title="Свой оттенок"
+            aria-label="Свой оттенок"
+            onClick={() => colorInputRef.current?.click()}
+          >
+            {!isCustomColor && '+'}
+          </button>
+          <input
+            ref={colorInputRef}
+            type="color"
+            className="color-hidden-input"
+            value={form.color_hex ?? '#808080'}
+            tabIndex={-1}
+            aria-hidden="true"
+            onChange={(e) => {
+              const hex = e.target.value
+              setForm((prev) => ({ ...prev, color_hex: hex, color: nearestColorName(hex) }))
+            }}
+          />
+        </div>
+        <input
+          type="text"
+          className="color-name-input"
+          value={form.color ?? ''}
+          onChange={(e) => updateField('color', e.target.value)}
+          placeholder="Название цвета"
+        />
       </label>
 
       <div className="form-row">

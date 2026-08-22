@@ -14,6 +14,7 @@ class Filament(Base):
     brand: Mapped[str] = mapped_column(String(100))
     material: Mapped[str] = mapped_column(String(50))
     color: Mapped[str | None] = mapped_column(String(50))
+    color_hex: Mapped[str | None] = mapped_column(String(7))
     weight_total_g: Mapped[int]
     weight_remaining_g: Mapped[int]
     price: Mapped[Decimal] = mapped_column(Numeric(10, 2))

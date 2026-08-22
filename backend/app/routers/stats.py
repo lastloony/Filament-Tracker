@@ -50,12 +50,19 @@ def summary(db: Session = Depends(get_db)):
 def overview(db: Session = Depends(get_db)):
     return schemas.InventoryOverview(
         by_material_color=[
-            schemas.InventoryByMaterialColor(material=material, color=color, remaining_g=remaining_g, spool_count=count)
-            for material, color, remaining_g, count in crud.inventory_by_material_color(db)
+            schemas.InventoryByMaterialColor(
+                material=material, color=color, color_hex=color_hex, remaining_g=remaining_g, spool_count=count
+            )
+            for material, color, color_hex, remaining_g, count in crud.inventory_by_material_color(db)
         ],
         reorder=[
             schemas.ReorderItem(
-                id=f.id, brand=f.brand, material=f.material, color=f.color, remaining_g=f.weight_remaining_g
+                id=f.id,
+                brand=f.brand,
+                material=f.material,
+                color=f.color,
+                color_hex=f.color_hex,
+                remaining_g=f.weight_remaining_g,
             )
             for f in crud.reorder_candidates(db)
         ],

@@ -5,6 +5,7 @@ export type Filament = {
   brand: string
   material: string
   color: string | null
+  color_hex: string | null
   weight_total_g: number
   weight_remaining_g: number
   price: string
@@ -22,6 +23,7 @@ export type FilamentInput = {
   brand: string
   material: string
   color: string | null
+  color_hex: string | null
   weight_total_g: number
   weight_remaining_g: number
   price: string

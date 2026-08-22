@@ -10,6 +10,7 @@ import {
 import { deleteFilament, listFilaments, updateFilament, type Filament } from '../api/filaments'
 import { ApiError } from '../api/client'
 import { listMaterials, type Material } from '../api/settings'
+import { ColorSwatch } from '../components/ColorSwatch'
 
 const PAGE_SIZE = 50
 const SORTABLE_FIELDS = new Set(['brand', 'price', 'rating', 'weight_remaining_g', 'created_at'])
@@ -112,7 +113,15 @@ export function FilamentList() {
   const columns = [
     columnHelper.accessor('brand', { header: 'Бренд' }),
     columnHelper.accessor('material', { header: 'Материал' }),
-    columnHelper.accessor('color', { header: 'Цвет', cell: (c) => c.getValue() ?? '—' }),
+    columnHelper.accessor('color', {
+      header: 'Цвет',
+      cell: (c) => (
+        <span className="color-cell">
+          <ColorSwatch hex={c.row.original.color_hex} name={c.getValue()} />
+          {c.getValue() ?? '—'}
+        </span>
+      ),
+    }),
     columnHelper.accessor('weight_remaining_g', {
       header: 'Остаток',
       cell: (c) => <RemainingCell filament={c.row.original} onSaved={replaceRow} />,
@@ -122,7 +131,7 @@ export function FilamentList() {
       cell: (c) => `${c.getValue()} ${c.row.original.currency}`,
     }),
     columnHelper.accessor('price_per_kg', {
-      header: '€/кг',
+      header: 'Цена/кг',
       cell: (c) => `${c.getValue()} ${c.row.original.currency}`,
     }),
     columnHelper.accessor('rating', { header: 'Рейтинг', cell: (c) => c.getValue() ?? '—' }),

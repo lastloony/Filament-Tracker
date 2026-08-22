@@ -114,6 +114,7 @@ def inventory_by_material_color(db: Session) -> list[Row]:
         select(
             models.Filament.material,
             models.Filament.color,
+            func.max(models.Filament.color_hex),
             func.sum(models.Filament.weight_remaining_g),
             func.count(models.Filament.id),
         )

@@ -27,6 +27,7 @@ export type StatsSummary = {
 export type InventoryByMaterialColor = {
   material: string
   color: string | null
+  color_hex: string | null
   remaining_g: number
   spool_count: number
 }
@@ -36,6 +37,7 @@ export type ReorderItem = {
   brand: string
   material: string
   color: string | null
+  color_hex: string | null
   remaining_g: number
 }
 

@@ -13,6 +13,7 @@ class FilamentBase(BaseModel):
     brand: str
     material: str
     color: str | None = None
+    color_hex: str | None = Field(default=None, min_length=7, max_length=7, pattern=r"^#[0-9a-fA-F]{6}$")
     weight_total_g: int = Field(gt=0)
     weight_remaining_g: int = Field(ge=0)
     price: Decimal = Field(gt=0)
@@ -31,6 +32,7 @@ class FilamentUpdate(BaseModel):
     brand: str | None = None
     material: str | None = None
     color: str | None = None
+    color_hex: str | None = Field(default=None, min_length=7, max_length=7, pattern=r"^#[0-9a-fA-F]{6}$")
     weight_total_g: int | None = Field(default=None, gt=0)
     weight_remaining_g: int | None = Field(default=None, ge=0)
     price: Decimal | None = Field(default=None, gt=0)
@@ -124,6 +126,7 @@ class StatsSummary(BaseModel):
 class InventoryByMaterialColor(BaseModel):
     material: str
     color: str | None
+    color_hex: str | None
     remaining_g: int
     spool_count: int
 
@@ -133,6 +136,7 @@ class ReorderItem(BaseModel):
     brand: str
     material: str
     color: str | None
+    color_hex: str | None
     remaining_g: int
 
 

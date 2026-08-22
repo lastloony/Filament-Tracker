@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { getOverview, getSummary, type InventoryOverview, type StatsSummary } from '../api/stats'
 import { ApiError } from '../api/client'
+import { ColorSwatch } from '../components/ColorSwatch'
 
 export function Overview() {
   const [overview, setOverview] = useState<InventoryOverview | null>(null)
@@ -55,7 +56,10 @@ export function Overview() {
               {overview.by_material_color.map((row) => (
                 <tr key={`${row.material}-${row.color ?? ''}`}>
                   <td>{row.material}</td>
-                  <td>{row.color ?? '—'}</td>
+                  <td className="color-cell">
+                    <ColorSwatch hex={row.color_hex} name={row.color} />
+                    {row.color ?? '—'}
+                  </td>
                   <td>{row.spool_count}</td>
                   <td>{(row.remaining_g / 1000).toFixed(2)} кг</td>
                 </tr>
@@ -90,7 +94,10 @@ export function Overview() {
                   <tr key={item.id}>
                     <td>{item.brand}</td>
                     <td>{item.material}</td>
-                    <td>{item.color ?? '—'}</td>
+                    <td className="color-cell">
+                      <ColorSwatch hex={item.color_hex} name={item.color} />
+                      {item.color ?? '—'}
+                    </td>
                     <td className="low-stock">{item.remaining_g} г</td>
                   </tr>
                 ))}
