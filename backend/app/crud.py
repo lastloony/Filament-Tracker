@@ -109,27 +109,43 @@ def stats_summary(db: Session) -> tuple[int, float | None, list[Row]]:
     return remaining_g, avg_rating, invested_by_currency
 
 
-def inventory_by_material_color(db: Session) -> list[Row]:
-    query = (
-        select(
-            models.Filament.material,
-            models.Filament.color,
-            func.max(models.Filament.color_hex),
-            func.sum(models.Filament.weight_remaining_g),
-            func.count(models.Filament.id),
-        )
-        .group_by(models.Filament.material, models.Filament.color)
-        .order_by(models.Filament.material, models.Filament.color)
+def inventory_by_material_color(
+    db: Session, *, brand: str | None = None, material: str | None = None, color: str | None = None
+) -> list[Row]:
+    query = select(
+        models.Filament.material,
+        models.Filament.color,
+        func.max(models.Filament.color_hex),
+        func.sum(models.Filament.weight_remaining_g),
+        func.count(models.Filament.id),
+    )
+    if brand:
+        query = query.where(models.Filament.brand == brand)
+    if material:
+        query = query.where(models.Filament.material == material)
+    if color:
+        query = query.where(models.Filament.color == color)
+    query = query.group_by(models.Filament.material, models.Filament.color).order_by(
+        models.Filament.material, models.Filament.color
     )
     return list(db.execute(query).all())
 
 
-def reorder_candidates(db: Session) -> list[models.Filament]:
+def reorder_candidates(
+    db: Session, *, brand: str | None = None, material: str | None = None, color: str | None = None
+) -> list[models.Filament]:
     rules = list(db.execute(select(models.ReorderRule)).scalars())
     specific_thresholds = {(r.brand, r.material, r.color): r.threshold_g for r in rules if r.brand}
     general_thresholds = {(r.material, r.color): r.threshold_g for r in rules if not r.brand}
 
-    filaments = list(db.execute(select(models.Filament)).scalars())
+    query = select(models.Filament)
+    if brand:
+        query = query.where(models.Filament.brand == brand)
+    if material:
+        query = query.where(models.Filament.material == material)
+    if color:
+        query = query.where(models.Filament.color == color)
+    filaments = list(db.execute(query).scalars())
     candidates = []
     for f in filaments:
         threshold = specific_thresholds.get((f.brand, f.material, f.color))

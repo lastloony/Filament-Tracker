@@ -62,6 +62,17 @@ export function getSummary(): Promise<StatsSummary> {
   return apiFetch('/stats/summary')
 }
 
-export function getOverview(): Promise<InventoryOverview> {
-  return apiFetch('/stats/overview')
+export type OverviewFilters = {
+  brand?: string
+  material?: string
+  color?: string
+}
+
+export function getOverview(filters: OverviewFilters = {}): Promise<InventoryOverview> {
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(filters)) {
+    if (value) query.set(key, value)
+  }
+  const qs = query.toString()
+  return apiFetch(`/stats/overview${qs ? `?${qs}` : ''}`)
 }

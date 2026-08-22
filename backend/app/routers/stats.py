@@ -47,13 +47,20 @@ def summary(db: Session = Depends(get_db)):
 
 
 @router.get("/overview", response_model=schemas.InventoryOverview)
-def overview(db: Session = Depends(get_db)):
+def overview(
+    brand: str | None = None,
+    material: str | None = None,
+    color: str | None = None,
+    db: Session = Depends(get_db),
+):
     return schemas.InventoryOverview(
         by_material_color=[
             schemas.InventoryByMaterialColor(
-                material=material, color=color, color_hex=color_hex, remaining_g=remaining_g, spool_count=count
+                material=material_, color=color_, color_hex=color_hex, remaining_g=remaining_g, spool_count=count
             )
-            for material, color, color_hex, remaining_g, count in crud.inventory_by_material_color(db)
+            for material_, color_, color_hex, remaining_g, count in crud.inventory_by_material_color(
+                db, brand=brand, material=material, color=color
+            )
         ],
         reorder=[
             schemas.ReorderItem(
@@ -64,6 +71,6 @@ def overview(db: Session = Depends(get_db)):
                 color_hex=f.color_hex,
                 remaining_g=f.weight_remaining_g,
             )
-            for f in crud.reorder_candidates(db)
+            for f in crud.reorder_candidates(db, brand=brand, material=material, color=color)
         ],
     )

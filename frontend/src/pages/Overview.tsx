@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getOverview, getSummary, type InventoryOverview, type StatsSummary } from '../api/stats'
+import { getOverview, type InventoryOverview } from '../api/stats'
+import { listBrands, listMaterials, type Brand, type Material } from '../api/settings'
 import { ApiError } from '../api/client'
 import { ColorSwatch } from '../components/ColorSwatch'
+import { COLOR_PALETTE } from '../colors'
 
 function formatWeight(grams: number): string {
   if (grams >= 1000) {
@@ -13,29 +15,80 @@ function formatWeight(grams: number): string {
 
 export function Overview() {
   const [overview, setOverview] = useState<InventoryOverview | null>(null)
-  const [summary, setSummary] = useState<StatsSummary | null>(null)
+  const [brands, setBrands] = useState<Brand[]>([])
+  const [materials, setMaterials] = useState<Material[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [brandFilter, setBrandFilter] = useState('')
+  const [materialFilter, setMaterialFilter] = useState('')
+  const [colorFilter, setColorFilter] = useState('')
 
   useEffect(() => {
-    Promise.all([getOverview(), getSummary()])
-      .then(([o, s]) => {
-        setOverview(o)
-        setSummary(s)
-      })
-      .catch((err) => setError(err instanceof ApiError ? err.message : 'Не удалось загрузить остатки'))
+    Promise.all([listBrands(), listMaterials()]).then(([b, m]) => {
+      setBrands(b)
+      setMaterials(m)
+    })
   }, [])
 
+  useEffect(() => {
+    setError(null)
+    getOverview({ brand: brandFilter, material: materialFilter, color: colorFilter })
+      .then(setOverview)
+      .catch((err) => setError(err instanceof ApiError ? err.message : 'Не удалось загрузить остатки'))
+  }, [brandFilter, materialFilter, colorFilter])
+
+  const hasFilters = brandFilter !== '' || materialFilter !== '' || colorFilter !== ''
+
+  function resetFilters() {
+    setBrandFilter('')
+    setMaterialFilter('')
+    setColorFilter('')
+  }
+
   if (error) return <p role="alert">{error}</p>
-  if (!overview || !summary) return <p>Загрузка...</p>
+  if (!overview) return <p>Загрузка...</p>
+
+  const totalGrams = overview.by_material_color.reduce((sum, row) => sum + row.remaining_g, 0)
 
   return (
     <div className="overview-page">
       <h1>Остатки</h1>
 
+      <div className="filters">
+        <select value={brandFilter} onChange={(e) => setBrandFilter(e.target.value)}>
+          <option value="">Все производители</option>
+          {brands.map((b) => (
+            <option key={b.id} value={b.name}>
+              {b.name}
+            </option>
+          ))}
+        </select>
+        <select value={materialFilter} onChange={(e) => setMaterialFilter(e.target.value)}>
+          <option value="">Все материалы</option>
+          {materials.map((m) => (
+            <option key={m.id} value={m.name}>
+              {m.name}
+            </option>
+          ))}
+        </select>
+        <select value={colorFilter} onChange={(e) => setColorFilter(e.target.value)}>
+          <option value="">Все цвета</option>
+          {COLOR_PALETTE.map((c) => (
+            <option key={c.hex} value={c.name}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        {hasFilters && (
+          <button type="button" className="link-button" onClick={resetFilters}>
+            Сбросить фильтры
+          </button>
+        )}
+      </div>
+
       <div className="kpi-row">
         <div className="stat-tile">
-          <div className="stat-tile-label">Остаток всего</div>
-          <div className="stat-tile-value">{formatWeight(Math.round(Number(summary.remaining_kg) * 1000))}</div>
+          <div className="stat-tile-label">Остаток{hasFilters ? ' (по фильтру)' : ' всего'}</div>
+          <div className="stat-tile-value">{formatWeight(totalGrams)}</div>
         </div>
         <div className="stat-tile">
           <div className="stat-tile-label">Комбинаций тип/цвет</div>
@@ -74,7 +127,7 @@ export function Overview() {
               {overview.by_material_color.length === 0 && (
                 <tr>
                   <td colSpan={4} className="chart-empty">
-                    Пока нет данных
+                    {hasFilters ? 'Под фильтр ничего не подошло' : 'Пока нет данных'}
                   </td>
                 </tr>
               )}
@@ -85,7 +138,7 @@ export function Overview() {
         <div className="chart-card">
           <h2>Пора дозаказать</h2>
           {overview.reorder.length === 0 ? (
-            <p className="chart-empty">Всё в достатке</p>
+            <p className="chart-empty">{hasFilters ? 'Под фильтр ничего не подошло' : 'Всё в достатке'}</p>
           ) : (
             <table>
               <thead>
