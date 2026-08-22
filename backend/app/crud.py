@@ -91,13 +91,21 @@ def stats_by_rating(db: Session) -> list[Row]:
     return list(db.execute(query).all())
 
 
-def stats_summary(db: Session) -> Row:
-    query = select(
+def stats_summary(db: Session) -> tuple[int, float | None, list[Row]]:
+    totals_query = select(
         func.coalesce(func.sum(models.Filament.weight_remaining_g), 0),
-        func.coalesce(func.sum(models.Filament.price), 0),
         func.avg(models.Filament.rating),
     )
-    return db.execute(query).one()
+    remaining_g, avg_rating = db.execute(totals_query).one()
+
+    invested_query = (
+        select(models.Filament.currency, func.sum(models.Filament.price))
+        .group_by(models.Filament.currency)
+        .order_by(models.Filament.currency)
+    )
+    invested_by_currency = list(db.execute(invested_query).all())
+
+    return remaining_g, avg_rating, invested_by_currency
 
 
 def list_brands(db: Session) -> list[models.Brand]:

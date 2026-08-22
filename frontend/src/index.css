@@ -274,6 +274,14 @@ th.sortable {
   font-weight: 600;
 }
 
+.stat-tile-value-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 18px;
+  font-weight: 600;
+}
+
 .chart-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));

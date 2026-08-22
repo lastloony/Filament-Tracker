@@ -12,7 +12,7 @@ const tooltipStyle = {
 }
 const axisTick = { fill: 'var(--text-muted)', fontSize: 12 }
 
-function StatTile({ label, value }: { label: string; value: string }) {
+function StatTile({ label, value }: { label: string; value: ReactElement | string }) {
   return (
     <div className="stat-tile">
       <div className="stat-tile-label">{label}</div>
@@ -90,7 +90,24 @@ export function Stats() {
 
       <div className="kpi-row">
         <StatTile label="Остаток" value={`${summary.remaining_kg} кг`} />
-        <StatTile label="Вложено" value={summary.total_invested} />
+        <StatTile
+          label="Вложено"
+          value={
+            summary.total_invested.length === 0 ? (
+              '—'
+            ) : summary.total_invested.length === 1 ? (
+              `${summary.total_invested[0].total} ${summary.total_invested[0].currency}`
+            ) : (
+              <div className="stat-tile-value-list">
+                {summary.total_invested.map((i) => (
+                  <div key={i.currency}>
+                    {i.total} {i.currency}
+                  </div>
+                ))}
+              </div>
+            )
+          }
+        />
         <StatTile label="Средний рейтинг" value={summary.avg_rating === null ? '—' : summary.avg_rating.toFixed(1)} />
       </div>
 

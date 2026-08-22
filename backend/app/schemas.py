@@ -110,7 +110,12 @@ class StatsByRating(BaseModel):
     count: int
 
 
+class InvestedByCurrency(BaseModel):
+    currency: str
+    total: Decimal
+
+
 class StatsSummary(BaseModel):
     remaining_kg: Decimal
-    total_invested: Decimal
+    total_invested: list[InvestedByCurrency]
     avg_rating: float | None

@@ -36,9 +36,11 @@ def by_rating(db: Session = Depends(get_db)):
 
 @router.get("/summary", response_model=schemas.StatsSummary)
 def summary(db: Session = Depends(get_db)):
-    remaining_g, total_invested, avg_rating = crud.stats_summary(db)
+    remaining_g, avg_rating, invested_by_currency = crud.stats_summary(db)
     return schemas.StatsSummary(
         remaining_kg=Decimal(remaining_g) / 1000,
-        total_invested=total_invested,
+        total_invested=[
+            schemas.InvestedByCurrency(currency=currency, total=total) for currency, total in invested_by_currency
+        ],
         avg_rating=avg_rating,
     )

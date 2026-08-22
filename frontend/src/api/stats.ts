@@ -13,9 +13,14 @@ export type StatsByRating = {
   count: number
 }
 
+export type InvestedByCurrency = {
+  currency: string
+  total: string
+}
+
 export type StatsSummary = {
   remaining_kg: string
-  total_invested: string
+  total_invested: InvestedByCurrency[]
   avg_rating: number | null
 }
 
