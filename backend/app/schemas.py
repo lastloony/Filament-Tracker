@@ -119,3 +119,23 @@ class StatsSummary(BaseModel):
     remaining_kg: Decimal
     total_invested: list[InvestedByCurrency]
     avg_rating: float | None
+
+
+class InventoryByMaterialColor(BaseModel):
+    material: str
+    color: str | None
+    remaining_g: int
+    spool_count: int
+
+
+class ReorderItem(BaseModel):
+    id: int
+    brand: str
+    material: str
+    color: str | None
+    remaining_g: int
+
+
+class InventoryOverview(BaseModel):
+    by_material_color: list[InventoryByMaterialColor]
+    reorder: list[ReorderItem]

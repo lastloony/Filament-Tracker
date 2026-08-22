@@ -24,6 +24,26 @@ export type StatsSummary = {
   avg_rating: number | null
 }
 
+export type InventoryByMaterialColor = {
+  material: string
+  color: string | null
+  remaining_g: number
+  spool_count: number
+}
+
+export type ReorderItem = {
+  id: number
+  brand: string
+  material: string
+  color: string | null
+  remaining_g: number
+}
+
+export type InventoryOverview = {
+  by_material_color: InventoryByMaterialColor[]
+  reorder: ReorderItem[]
+}
+
 export function getByBrand(): Promise<StatsByGroup[]> {
   return apiFetch('/stats/by-brand')
 }
@@ -38,4 +58,8 @@ export function getByRating(): Promise<StatsByRating[]> {
 
 export function getSummary(): Promise<StatsSummary> {
   return apiFetch('/stats/summary')
+}
+
+export function getOverview(): Promise<InventoryOverview> {
+  return apiFetch('/stats/overview')
 }

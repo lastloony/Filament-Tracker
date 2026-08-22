@@ -1,6 +1,6 @@
 [project]
 name = "filament-tracker-backend"
-version = "0.2.3"
+version = "0.2.4"
 description = "Filament Tracker backend (FastAPI)"
 requires-python = ">=3.13"
 dependencies = [

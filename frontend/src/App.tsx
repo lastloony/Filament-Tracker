@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Link } from 'react-router-dom'
 import { Login } from './pages/Login'
+import { Overview } from './pages/Overview'
 import { FilamentList } from './pages/FilamentList'
 import { FilamentForm } from './pages/FilamentForm'
 import { Stats } from './pages/Stats'
@@ -36,6 +37,7 @@ function App() {
         <div className="app">
           <nav>
             <div className="nav-links">
+              <Link to="/overview">Остатки</Link>
               <Link to="/filaments">Филамент</Link>
               <Link to="/stats">Статистика</Link>
               <Link to="/settings">Настройки</Link>
@@ -52,7 +54,8 @@ function App() {
           </nav>
           <main>
             <Routes>
-              <Route path="/" element={<Navigate to="/filaments" replace />} />
+              <Route path="/" element={<Navigate to="/overview" replace />} />
+              <Route path="/overview" element={<Overview />} />
               <Route path="/filaments" element={<FilamentList />} />
               <Route path="/filaments/new" element={<FilamentForm />} />
               <Route path="/filaments/:id/edit" element={<FilamentForm />} />

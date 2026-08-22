@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 
 SORTABLE_FIELDS = {"price", "rating", "weight_remaining_g", "created_at", "brand"}
+LOW_STOCK_THRESHOLD_G = 100
 
 
 def get_filament(db: Session, filament_id: int) -> models.Filament | None:
@@ -106,6 +107,29 @@ def stats_summary(db: Session) -> tuple[int, float | None, list[Row]]:
     invested_by_currency = list(db.execute(invested_query).all())
 
     return remaining_g, avg_rating, invested_by_currency
+
+
+def inventory_by_material_color(db: Session) -> list[Row]:
+    query = (
+        select(
+            models.Filament.material,
+            models.Filament.color,
+            func.sum(models.Filament.weight_remaining_g),
+            func.count(models.Filament.id),
+        )
+        .group_by(models.Filament.material, models.Filament.color)
+        .order_by(models.Filament.material, models.Filament.color)
+    )
+    return list(db.execute(query).all())
+
+
+def reorder_candidates(db: Session) -> list[models.Filament]:
+    query = (
+        select(models.Filament)
+        .where(models.Filament.weight_remaining_g < LOW_STOCK_THRESHOLD_G)
+        .order_by(models.Filament.weight_remaining_g)
+    )
+    return list(db.execute(query).scalars())
 
 
 def list_brands(db: Session) -> list[models.Brand]:
