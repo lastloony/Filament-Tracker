@@ -19,14 +19,14 @@ backend/
     main.py          # FastAPI app, роуты смонтированы под /api
     config.py         # настройки из .env
     database.py        # engine, SessionLocal, get_db
-    models.py         # SQLAlchemy-модели: Filament, Brand, Material, Currency
+    models.py         # SQLAlchemy-модели: Filament, Brand, Material, Currency, ReorderRule
     schemas.py         # Pydantic-схемы
     crud.py           # CRUD + агрегации для статистики
     auth.py           # JWT, bcrypt, get_current_user
     routers/
       auth.py          # /api/auth/login, /logout, /me
       filaments.py       # /api/filaments CRUD
-      settings.py        # /api/settings/brands, /materials, /currencies
+      settings.py        # /api/settings/brands, /materials, /currencies, /reorder-rules
       stats.py          # /api/stats/*
   alembic/            # миграции БД
   pyproject.toml / uv.lock
