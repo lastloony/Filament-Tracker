@@ -4,6 +4,13 @@ import { getOverview, getSummary, type InventoryOverview, type StatsSummary } fr
 import { ApiError } from '../api/client'
 import { ColorSwatch } from '../components/ColorSwatch'
 
+function formatWeight(grams: number): string {
+  if (grams >= 1000) {
+    return `${grams} г (${(grams / 1000).toFixed(2)} кг)`
+  }
+  return `${grams} г`
+}
+
 export function Overview() {
   const [overview, setOverview] = useState<InventoryOverview | null>(null)
   const [summary, setSummary] = useState<StatsSummary | null>(null)
@@ -28,7 +35,7 @@ export function Overview() {
       <div className="kpi-row">
         <div className="stat-tile">
           <div className="stat-tile-label">Остаток всего</div>
-          <div className="stat-tile-value">{summary.remaining_kg} кг</div>
+          <div className="stat-tile-value">{formatWeight(Math.round(Number(summary.remaining_kg) * 1000))}</div>
         </div>
         <div className="stat-tile">
           <div className="stat-tile-label">Комбинаций тип/цвет</div>
@@ -61,7 +68,7 @@ export function Overview() {
                     {row.color ?? '—'}
                   </td>
                   <td>{row.spool_count}</td>
-                  <td>{(row.remaining_g / 1000).toFixed(2)} кг</td>
+                  <td>{formatWeight(row.remaining_g)}</td>
                 </tr>
               ))}
               {overview.by_material_color.length === 0 && (
@@ -98,7 +105,7 @@ export function Overview() {
                       <ColorSwatch hex={item.color_hex} name={item.color} />
                       {item.color ?? '—'}
                     </td>
-                    <td className="low-stock">{item.remaining_g} г</td>
+                    <td className="low-stock">{formatWeight(item.remaining_g)}</td>
                   </tr>
                 ))}
               </tbody>

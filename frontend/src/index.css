@@ -115,6 +115,11 @@ textarea {
   color: inherit;
 }
 
+select option {
+  background: var(--card-bg);
+  color: var(--text);
+}
+
 .app {
   display: flex;
   flex-direction: column;
@@ -345,7 +350,12 @@ th.sortable {
 
 .settings-add-row {
   display: flex;
+  flex-direction: row;
   gap: 8px;
+  max-width: none;
+  padding: 0;
+  background: none;
+  border: none;
 }
 
 .settings-add-row input {
@@ -444,4 +454,26 @@ th.sortable {
 
 .color-name-input {
   margin-top: 6px;
+}
+
+.reorder-rule-form {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+  max-width: none;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.reorder-rule-form select,
+.reorder-rule-form input {
+  flex: 1;
+  min-width: 130px;
+}
+
+.reorder-rule-form button {
+  width: auto;
 }

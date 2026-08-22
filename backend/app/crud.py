@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app import models, schemas
 
 SORTABLE_FIELDS = {"price", "rating", "weight_remaining_g", "created_at", "brand"}
-LOW_STOCK_THRESHOLD_G = 100
+LOW_STOCK_THRESHOLD_G = 300  # fallback when no matching ReorderRule is configured
 
 
 def get_filament(db: Session, filament_id: int) -> models.Filament | None:
@@ -125,12 +125,23 @@ def inventory_by_material_color(db: Session) -> list[Row]:
 
 
 def reorder_candidates(db: Session) -> list[models.Filament]:
-    query = (
-        select(models.Filament)
-        .where(models.Filament.weight_remaining_g < LOW_STOCK_THRESHOLD_G)
-        .order_by(models.Filament.weight_remaining_g)
-    )
-    return list(db.execute(query).scalars())
+    rules = list(db.execute(select(models.ReorderRule)).scalars())
+    specific_thresholds = {(r.brand, r.material, r.color): r.threshold_g for r in rules if r.brand}
+    general_thresholds = {(r.material, r.color): r.threshold_g for r in rules if not r.brand}
+
+    filaments = list(db.execute(select(models.Filament)).scalars())
+    candidates = []
+    for f in filaments:
+        threshold = specific_thresholds.get((f.brand, f.material, f.color))
+        if threshold is None:
+            threshold = general_thresholds.get((f.material, f.color))
+        if threshold is None:
+            threshold = LOW_STOCK_THRESHOLD_G
+        if f.weight_remaining_g < threshold:
+            candidates.append(f)
+
+    candidates.sort(key=lambda f: f.weight_remaining_g)
+    return candidates
 
 
 def list_brands(db: Session) -> list[models.Brand]:
@@ -179,3 +190,41 @@ def set_base_currency(db: Session, currency: models.Currency) -> models.Currency
     db.commit()
     db.refresh(currency)
     return currency
+
+
+def list_reorder_rules(db: Session) -> list[models.ReorderRule]:
+    query = select(models.ReorderRule).order_by(models.ReorderRule.material, models.ReorderRule.color)
+    return list(db.execute(query).scalars())
+
+
+def find_reorder_rule(
+    db: Session, *, material: str, color: str, brand: str | None
+) -> models.ReorderRule | None:
+    query = select(models.ReorderRule).where(
+        models.ReorderRule.material == material,
+        models.ReorderRule.color == color,
+        models.ReorderRule.brand == brand,
+    )
+    return db.execute(query).scalars().first()
+
+
+def create_reorder_rule(db: Session, data: schemas.ReorderRuleCreate) -> models.ReorderRule:
+    rule = models.ReorderRule(
+        material=data.material.strip(),
+        color=data.color.strip(),
+        brand=data.brand.strip() if data.brand else None,
+        threshold_g=data.threshold_g,
+    )
+    db.add(rule)
+    db.commit()
+    db.refresh(rule)
+    return rule
+
+
+def get_reorder_rule(db: Session, rule_id: int) -> models.ReorderRule | None:
+    return db.get(models.ReorderRule, rule_id)
+
+
+def delete_reorder_rule(db: Session, rule: models.ReorderRule) -> None:
+    db.delete(rule)
+    db.commit()

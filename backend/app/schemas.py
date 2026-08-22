@@ -99,6 +99,23 @@ class CurrencyRead(CurrencyBase):
     is_base: bool
 
 
+class ReorderRuleBase(BaseModel):
+    material: str = Field(min_length=1, max_length=50)
+    color: str = Field(min_length=1, max_length=50)
+    brand: str | None = Field(default=None, max_length=100)
+    threshold_g: int = Field(gt=0)
+
+
+class ReorderRuleCreate(ReorderRuleBase):
+    pass
+
+
+class ReorderRuleRead(ReorderRuleBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+
+
 class StatsByGroup(BaseModel):
     group: str
     total_spent: Decimal

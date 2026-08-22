@@ -47,3 +47,13 @@ class Currency(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     code: Mapped[str] = mapped_column(String(3), unique=True)
     is_base: Mapped[bool] = mapped_column(default=False)
+
+
+class ReorderRule(Base):
+    __tablename__ = "reorder_rules"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    material: Mapped[str] = mapped_column(String(50))
+    color: Mapped[str] = mapped_column(String(50))
+    brand: Mapped[str | None] = mapped_column(String(100))
+    threshold_g: Mapped[int]
