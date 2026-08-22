@@ -178,19 +178,17 @@ export function FilamentForm() {
 
         <label>
           Валюта
-          <input
-            type="text"
-            list="currencies"
-            value={form.currency}
-            onChange={(e) => updateField('currency', e.target.value.toUpperCase())}
-            maxLength={3}
-            required
-          />
-          <datalist id="currencies">
+          <select value={form.currency} onChange={(e) => updateField('currency', e.target.value)} required>
+            {form.currency && !currencies.some((c) => c.code === form.currency) && (
+              <option value={form.currency}>{form.currency}</option>
+            )}
             {currencies.map((c) => (
-              <option key={c.id} value={c.code} />
+              <option key={c.id} value={c.code}>
+                {c.code}
+                {c.is_base ? ' (базовая)' : ''}
+              </option>
             ))}
-          </datalist>
+          </select>
         </label>
       </div>
 

@@ -25,16 +25,32 @@ if (-not (Get-Command npm -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
-if (-not (Test-Path $BackendEnv)) {
-    Copy-Item (Join-Path $RepoRoot ".env.example") $BackendEnv
-    Write-Host "Создан backend\.env из .env.example - заполни SECRET_KEY, ADMIN_USERNAME, ADMIN_PASSWORD_HASH и запусти скрипт снова." -ForegroundColor Yellow
-    Write-Host "Хэш пароля: см. раздел README про ADMIN_PASSWORD_HASH." -ForegroundColor Yellow
-    exit 1
-}
-
 Write-Host "Синхронизация backend-зависимостей (uv sync)..." -ForegroundColor Cyan
 Push-Location $BackendDir
 uv sync
+
+if (-not (Test-Path $BackendEnv)) {
+    Copy-Item (Join-Path $RepoRoot ".env.example") $BackendEnv
+
+    $password = Read-Host "Пароль для пользователя admin (Enter - будет 'admin')"
+    if ([string]::IsNullOrWhiteSpace($password)) {
+        $password = "admin"
+    }
+
+    $secretKeyBytes = New-Object byte[] 32
+    [System.Security.Cryptography.RandomNumberGenerator]::Fill($secretKeyBytes)
+    $secretKey = [System.Convert]::ToBase64String($secretKeyBytes)
+    $passwordHash = uv run python -c "import bcrypt, sys; print(bcrypt.hashpw(sys.argv[1].encode(), bcrypt.gensalt()).decode())" $password
+
+    (Get-Content $BackendEnv) | ForEach-Object {
+        $_ -replace '^SECRET_KEY=.*', "SECRET_KEY=$secretKey" `
+           -replace '^ADMIN_USERNAME=.*', 'ADMIN_USERNAME=admin' `
+           -replace '^ADMIN_PASSWORD_HASH=.*', "ADMIN_PASSWORD_HASH=$passwordHash"
+    } | Set-Content $BackendEnv
+
+    Write-Host "Создан backend\.env: admin / $password (при необходимости смени пароль в .env)." -ForegroundColor Yellow
+}
+
 Write-Host "Миграции (alembic upgrade head)..." -ForegroundColor Cyan
 uv run alembic upgrade head
 Pop-Location

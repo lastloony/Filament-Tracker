@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react'
 import {
   type Brand,
   type Currency,
@@ -13,12 +13,14 @@ import {
 } from '../api/settings'
 import { ApiError } from '../api/client'
 
-function NameListSection({
+function NameTable({
   title,
+  columnLabel,
   items,
   onAdd,
 }: {
   title: string
+  columnLabel: string
   items: { id: number; name: string }[]
   onAdd: (name: string) => Promise<void>
 }) {
@@ -42,22 +44,44 @@ function NameListSection({
   }
 
   return (
-    <section className="settings-section">
+    <div className="chart-card">
       <h2>{title}</h2>
-      <ul className="settings-list">
-        {items.map((item) => (
-          <li key={item.id}>{item.name}</li>
-        ))}
-        {items.length === 0 && <li className="settings-empty">Пока пусто</li>}
-      </ul>
-      <form className="settings-add-form" onSubmit={handleSubmit}>
-        <input type="text" value={value} onChange={(e) => setValue(e.target.value)} placeholder="Новое значение" />
-        <button type="submit" disabled={isSubmitting}>
-          Добавить
-        </button>
-      </form>
+      <table>
+        <thead>
+          <tr>
+            <th>{columnLabel}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {items.map((item) => (
+            <tr key={item.id}>
+              <td>{item.name}</td>
+            </tr>
+          ))}
+          {items.length === 0 && (
+            <tr>
+              <td className="chart-empty">Пока пусто</td>
+            </tr>
+          )}
+          <tr>
+            <td>
+              <form className="settings-add-row" onSubmit={handleSubmit}>
+                <input
+                  type="text"
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  placeholder="Новое значение"
+                />
+                <button type="submit" disabled={isSubmitting}>
+                  Добавить
+                </button>
+              </form>
+            </td>
+          </tr>
+        </tbody>
+      </table>
       {error && <p role="alert">{error}</p>}
-    </section>
+    </div>
   )
 }
 
@@ -84,8 +108,7 @@ export function Settings() {
       .finally(() => setIsLoading(false))
   }, [])
 
-  async function handleAddCurrency(event: FormEvent) {
-    event.preventDefault()
+  async function handleAddCurrency() {
     const code = newCurrency.trim().toUpperCase()
     if (code.length !== 3) {
       setCurrencyError('Код валюты — 3 буквы')
@@ -104,6 +127,13 @@ export function Settings() {
     }
   }
 
+  function handleCurrencyKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === 'Enter') {
+      event.preventDefault()
+      handleAddCurrency()
+    }
+  }
+
   async function handleSetBase(id: number) {
     const updated = await setBaseCurrency(id)
     setCurrencies((prev) => prev.map((c) => (c.id === updated.id ? updated : { ...c, is_base: false })))
@@ -116,54 +146,73 @@ export function Settings() {
       <h1>Настройки</h1>
       {error && <p role="alert">{error}</p>}
 
-      <section className="settings-section">
-        <h2>Валюта</h2>
-        <ul className="settings-list">
-          {currencies.map((currency) => (
-            <li key={currency.id}>
-              {currency.code}
-              {currency.is_base ? (
-                <span className="badge">базовая</span>
-              ) : (
-                <button type="button" className="link-button" onClick={() => handleSetBase(currency.id)}>
-                  Сделать базовой
-                </button>
-              )}
-            </li>
-          ))}
-        </ul>
-        <form className="settings-add-form" onSubmit={handleAddCurrency}>
-          <input
-            type="text"
-            value={newCurrency}
-            onChange={(e) => setNewCurrency(e.target.value.toUpperCase())}
-            maxLength={3}
-            placeholder="Код (например USD)"
-          />
-          <button type="submit" disabled={isSubmittingCurrency}>
-            Добавить
-          </button>
-        </form>
-        {currencyError && <p role="alert">{currencyError}</p>}
-      </section>
+      <div className="chart-grid">
+        <div className="chart-card">
+          <h2>Валюта</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Код</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {currencies.map((currency) => (
+                <tr key={currency.id}>
+                  <td>{currency.code}</td>
+                  <td className="settings-action-cell">
+                    {currency.is_base ? (
+                      <span className="badge">базовая</span>
+                    ) : (
+                      <button type="button" className="link-button" onClick={() => handleSetBase(currency.id)}>
+                        Сделать базовой
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+              <tr>
+                <td>
+                  <input
+                    type="text"
+                    value={newCurrency}
+                    onChange={(e) => setNewCurrency(e.target.value.toUpperCase())}
+                    onKeyDown={handleCurrencyKeyDown}
+                    maxLength={3}
+                    placeholder="USD"
+                  />
+                </td>
+                <td className="settings-action-cell">
+                  <button type="button" onClick={handleAddCurrency} disabled={isSubmittingCurrency}>
+                    Добавить
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          {currencyError && <p role="alert">{currencyError}</p>}
+        </div>
 
-      <NameListSection
-        title="Производители филамента"
-        items={brands}
-        onAdd={async (name) => {
-          const created = await createBrand(name)
-          setBrands((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)))
-        }}
-      />
+        <NameTable
+          title="Производители филамента"
+          columnLabel="Название"
+          items={brands}
+          onAdd={async (name) => {
+            const created = await createBrand(name)
+            setBrands((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)))
+          }}
+        />
 
-      <NameListSection
-        title="Тип филамента"
-        items={materials}
-        onAdd={async (name) => {
-          const created = await createMaterial(name)
-          setMaterials((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)))
-        }}
-      />
+        <NameTable
+          title="Тип филамента"
+          columnLabel="Название"
+          items={materials}
+          onAdd={async (name) => {
+            const created = await createMaterial(name)
+            setMaterials((prev) => [...prev, created].sort((a, b) => a.name.localeCompare(b.name)))
+          }}
+        />
+      </div>
     </div>
   )
 }

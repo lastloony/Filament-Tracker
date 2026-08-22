@@ -70,7 +70,7 @@ docs/
 .\scripts\dev.ps1
 ```
 
-Проверяет `python`/`uv`/`npm` в PATH, при первом запуске создаёт `backend/.env` из `.env.example` и просит его заполнить (см. хэш пароля ниже), затем сам делает `uv sync` + `alembic upgrade head` и `npm install`, поднимает backend и frontend каждый в своём окне PowerShell и открывает `localhost:5173` в браузере. По сути автоматизирует «Вариант 1» ниже — Docker он не трогает.
+Проверяет `python`/`uv`/`npm` в PATH. При первом запуске создаёт `backend/.env`, спрашивает пароль для `admin` (Enter — будет пароль `admin`) и сам генерирует `SECRET_KEY` и bcrypt-хэш — руками ничего заполнять не нужно. Дальше сам делает `uv sync` + `alembic upgrade head` и `npm install`, поднимает backend и frontend каждый в своём окне PowerShell и открывает `localhost:5173` в браузере. По сути автоматизирует «Вариант 1» ниже — Docker он не трогает.
 
 ### Вариант 1 — напрямую
 
