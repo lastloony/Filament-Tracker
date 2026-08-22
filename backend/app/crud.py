@@ -131,6 +131,20 @@ def inventory_by_material_color(
     return list(db.execute(query).all())
 
 
+def inventory_by_brand(db: Session, *, material: str, color: str) -> list[Row]:
+    query = (
+        select(
+            models.Filament.brand,
+            func.sum(models.Filament.weight_remaining_g),
+            func.count(models.Filament.id),
+        )
+        .where(models.Filament.material == material, models.Filament.color == color)
+        .group_by(models.Filament.brand)
+        .order_by(models.Filament.brand)
+    )
+    return list(db.execute(query).all())
+
+
 def reorder_candidates(
     db: Session, *, brand: str | None = None, material: str | None = None, color: str | None = None
 ) -> list[models.Filament]:

@@ -74,3 +74,11 @@ def overview(
             for f in crud.reorder_candidates(db, brand=brand, material=material, color=color)
         ],
     )
+
+
+@router.get("/overview/by-brand", response_model=list[schemas.InventoryByBrand])
+def overview_by_brand(material: str, color: str, db: Session = Depends(get_db)):
+    return [
+        schemas.InventoryByBrand(brand=brand, remaining_g=remaining_g, spool_count=count)
+        for brand, remaining_g, count in crud.inventory_by_brand(db, material=material, color=color)
+    ]

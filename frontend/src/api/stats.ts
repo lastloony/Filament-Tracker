@@ -46,6 +46,12 @@ export type InventoryOverview = {
   reorder: ReorderItem[]
 }
 
+export type InventoryByBrand = {
+  brand: string
+  remaining_g: number
+  spool_count: number
+}
+
 export function getByBrand(): Promise<StatsByGroup[]> {
   return apiFetch('/stats/by-brand')
 }
@@ -75,4 +81,9 @@ export function getOverview(filters: OverviewFilters = {}): Promise<InventoryOve
   }
   const qs = query.toString()
   return apiFetch(`/stats/overview${qs ? `?${qs}` : ''}`)
+}
+
+export function getOverviewByBrand(material: string, color: string): Promise<InventoryByBrand[]> {
+  const query = new URLSearchParams({ material, color })
+  return apiFetch(`/stats/overview/by-brand?${query.toString()}`)
 }

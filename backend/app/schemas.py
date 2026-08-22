@@ -148,6 +148,12 @@ class InventoryByMaterialColor(BaseModel):
     spool_count: int
 
 
+class InventoryByBrand(BaseModel):
+    brand: str
+    remaining_g: int
+    spool_count: int
+
+
 class ReorderItem(BaseModel):
     id: int
     brand: str

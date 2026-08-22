@@ -400,6 +400,23 @@ th.sortable {
   gap: 6px;
 }
 
+.color-cell-clickable {
+  cursor: pointer;
+}
+
+.color-cell-clickable:hover {
+  text-decoration: underline;
+}
+
+.overview-brand-breakdown {
+  background: var(--bg);
+  padding: 10px 16px !important;
+}
+
+.overview-brand-breakdown table {
+  margin: 0;
+}
+
 .color-palette {
   position: relative;
   display: flex;
@@ -442,6 +459,42 @@ th.sortable {
   border-style: solid;
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+
+.overview-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.material-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.material-tab {
+  width: auto;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.material-tab.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.color-palette-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .color-hidden-input {

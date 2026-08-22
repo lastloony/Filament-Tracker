@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import { getOverview, type InventoryOverview } from '../api/stats'
-import { listBrands, listMaterials, type Brand, type Material } from '../api/settings'
+import { getOverview, getOverviewByBrand, type InventoryByBrand, type InventoryOverview } from '../api/stats'
+import { listMaterials, type Material } from '../api/settings'
 import { ApiError } from '../api/client'
 import { ColorSwatch } from '../components/ColorSwatch'
 
@@ -16,17 +16,18 @@ type ColorOption = { color: string; color_hex: string | null }
 
 export function Overview() {
   const [overview, setOverview] = useState<InventoryOverview | null>(null)
-  const [brands, setBrands] = useState<Brand[]>([])
   const [materials, setMaterials] = useState<Material[]>([])
   const [colorOptions, setColorOptions] = useState<ColorOption[]>([])
   const [error, setError] = useState<string | null>(null)
-  const [brandFilter, setBrandFilter] = useState('')
   const [materialFilter, setMaterialFilter] = useState('')
   const [colorFilter, setColorFilter] = useState('')
 
+  const [expandedKey, setExpandedKey] = useState<string | null>(null)
+  const [brandBreakdown, setBrandBreakdown] = useState<InventoryByBrand[]>([])
+  const [brandBreakdownError, setBrandBreakdownError] = useState<string | null>(null)
+
   useEffect(() => {
-    Promise.all([listBrands(), listMaterials(), getOverview()]).then(([b, m, unfiltered]) => {
-      setBrands(b)
+    Promise.all([listMaterials(), getOverview()]).then(([m, unfiltered]) => {
       setMaterials(m)
 
       const seen = new Map<string, string | null>()
@@ -43,17 +44,31 @@ export function Overview() {
 
   useEffect(() => {
     setError(null)
-    getOverview({ brand: brandFilter, material: materialFilter, color: colorFilter })
+    getOverview({ material: materialFilter, color: colorFilter })
       .then(setOverview)
       .catch((err) => setError(err instanceof ApiError ? err.message : 'Не удалось загрузить остатки'))
-  }, [brandFilter, materialFilter, colorFilter])
+  }, [materialFilter, colorFilter])
 
-  const hasFilters = brandFilter !== '' || materialFilter !== '' || colorFilter !== ''
+  const hasFilters = materialFilter !== '' || colorFilter !== ''
 
   function resetFilters() {
-    setBrandFilter('')
     setMaterialFilter('')
     setColorFilter('')
+  }
+
+  function toggleBrandBreakdown(material: string, color: string | null) {
+    if (!color) return
+    const key = `${material}|${color}`
+    if (expandedKey === key) {
+      setExpandedKey(null)
+      return
+    }
+    setExpandedKey(key)
+    setBrandBreakdown([])
+    setBrandBreakdownError(null)
+    getOverviewByBrand(material, color)
+      .then(setBrandBreakdown)
+      .catch((err) => setBrandBreakdownError(err instanceof ApiError ? err.message : 'Не удалось загрузить остаток'))
   }
 
   if (error) return <p role="alert">{error}</p>
@@ -65,52 +80,58 @@ export function Overview() {
     <div className="overview-page">
       <h1>Остатки</h1>
 
-      <div className="filters">
-        <select value={brandFilter} onChange={(e) => setBrandFilter(e.target.value)}>
-          <option value="">Все производители</option>
-          {brands.map((b) => (
-            <option key={b.id} value={b.name}>
-              {b.name}
-            </option>
-          ))}
-        </select>
-        <select value={materialFilter} onChange={(e) => setMaterialFilter(e.target.value)}>
-          <option value="">Все материалы</option>
-          {materials.map((m) => (
-            <option key={m.id} value={m.name}>
-              {m.name}
-            </option>
-          ))}
-        </select>
-        <div className="color-palette">
+      <div className="overview-filters">
+        <div className="material-tabs">
           <button
             type="button"
-            className={`color-palette-custom${colorFilter === '' ? ' selected' : ''}`}
-            title="Все цвета"
-            aria-label="Все цвета"
-            onClick={() => setColorFilter('')}
+            className={`material-tab${materialFilter === '' ? ' selected' : ''}`}
+            onClick={() => setMaterialFilter('')}
           >
-            ×
+            Все материалы
           </button>
-          {colorOptions.map((c) => (
+          {materials.map((m) => (
             <button
-              key={c.color}
+              key={m.id}
               type="button"
-              className={`color-palette-swatch${colorFilter === c.color ? ' selected' : ''}`}
-              style={c.color_hex ? { background: c.color_hex } : undefined}
-              title={c.color}
-              aria-label={c.color}
-              onClick={() => setColorFilter(colorFilter === c.color ? '' : c.color)}
+              className={`material-tab${materialFilter === m.name ? ' selected' : ''}`}
+              onClick={() => setMaterialFilter(materialFilter === m.name ? '' : m.name)}
             >
-              {!c.color_hex && '?'}
+              {m.name}
             </button>
           ))}
         </div>
-        {hasFilters && (
-          <button type="button" className="link-button" onClick={resetFilters}>
-            Сбросить фильтры
-          </button>
-        )}
+
+        <div className="color-palette-row">
+          <div className="color-palette">
+            <button
+              type="button"
+              className={`color-palette-custom${colorFilter === '' ? ' selected' : ''}`}
+              title="Все цвета"
+              aria-label="Все цвета"
+              onClick={() => setColorFilter('')}
+            >
+              ×
+            </button>
+            {colorOptions.map((c) => (
+              <button
+                key={c.color}
+                type="button"
+                className={`color-palette-swatch${colorFilter === c.color ? ' selected' : ''}`}
+                style={c.color_hex ? { background: c.color_hex } : undefined}
+                title={c.color}
+                aria-label={c.color}
+                onClick={() => setColorFilter(colorFilter === c.color ? '' : c.color)}
+              >
+                {!c.color_hex && '?'}
+              </button>
+            ))}
+          </div>
+          {hasFilters && (
+            <button type="button" className="link-button" onClick={resetFilters}>
+              Сбросить фильтры
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="kpi-row">
@@ -131,6 +152,7 @@ export function Overview() {
       <div className="chart-grid">
         <div className="chart-card">
           <h2>Остаток по типу и цвету</h2>
+          <p className="overview-hint">Клик по цвету — остаток по производителям</p>
           <table>
             <thead>
               <tr>
@@ -141,17 +163,54 @@ export function Overview() {
               </tr>
             </thead>
             <tbody>
-              {overview.by_material_color.map((row) => (
-                <tr key={`${row.material}-${row.color ?? ''}`}>
-                  <td>{row.material}</td>
-                  <td className="color-cell">
-                    <ColorSwatch hex={row.color_hex} name={row.color} />
-                    {row.color ?? '—'}
-                  </td>
-                  <td>{row.spool_count}</td>
-                  <td>{formatWeight(row.remaining_g)}</td>
-                </tr>
-              ))}
+              {overview.by_material_color.map((row) => {
+                const key = `${row.material}|${row.color ?? ''}`
+                const isExpanded = expandedKey === key
+                return (
+                  <Fragment key={key}>
+                    <tr>
+                      <td>{row.material}</td>
+                      <td
+                        className={`color-cell${row.color ? ' color-cell-clickable' : ''}`}
+                        onClick={() => toggleBrandBreakdown(row.material, row.color)}
+                      >
+                        <ColorSwatch hex={row.color_hex} name={row.color} />
+                        {row.color ?? '—'}
+                      </td>
+                      <td>{row.spool_count}</td>
+                      <td>{formatWeight(row.remaining_g)}</td>
+                    </tr>
+                    {isExpanded && (
+                      <tr>
+                        <td colSpan={4} className="overview-brand-breakdown">
+                          {brandBreakdownError && <p role="alert">{brandBreakdownError}</p>}
+                          {!brandBreakdownError && brandBreakdown.length === 0 && <p className="chart-empty">Загрузка...</p>}
+                          {brandBreakdown.length > 0 && (
+                            <table>
+                              <thead>
+                                <tr>
+                                  <th>Производитель</th>
+                                  <th>Катушек</th>
+                                  <th>Остаток</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {brandBreakdown.map((b) => (
+                                  <tr key={b.brand}>
+                                    <td>{b.brand}</td>
+                                    <td>{b.spool_count}</td>
+                                    <td>{formatWeight(b.remaining_g)}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          )}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                )
+              })}
               {overview.by_material_color.length === 0 && (
                 <tr>
                   <td colSpan={4} className="chart-empty">
