@@ -4,7 +4,6 @@ import { getOverview, type InventoryOverview } from '../api/stats'
 import { listBrands, listMaterials, type Brand, type Material } from '../api/settings'
 import { ApiError } from '../api/client'
 import { ColorSwatch } from '../components/ColorSwatch'
-import { COLOR_PALETTE } from '../colors'
 
 function formatWeight(grams: number): string {
   if (grams >= 1000) {
@@ -13,19 +12,32 @@ function formatWeight(grams: number): string {
   return `${grams} г`
 }
 
+type ColorOption = { color: string; color_hex: string | null }
+
 export function Overview() {
   const [overview, setOverview] = useState<InventoryOverview | null>(null)
   const [brands, setBrands] = useState<Brand[]>([])
   const [materials, setMaterials] = useState<Material[]>([])
+  const [colorOptions, setColorOptions] = useState<ColorOption[]>([])
   const [error, setError] = useState<string | null>(null)
   const [brandFilter, setBrandFilter] = useState('')
   const [materialFilter, setMaterialFilter] = useState('')
   const [colorFilter, setColorFilter] = useState('')
 
   useEffect(() => {
-    Promise.all([listBrands(), listMaterials()]).then(([b, m]) => {
+    Promise.all([listBrands(), listMaterials(), getOverview()]).then(([b, m, unfiltered]) => {
       setBrands(b)
       setMaterials(m)
+
+      const seen = new Map<string, string | null>()
+      for (const row of unfiltered.by_material_color) {
+        if (row.color && !seen.has(row.color)) seen.set(row.color, row.color_hex)
+      }
+      setColorOptions(
+        Array.from(seen, ([color, color_hex]) => ({ color, color_hex })).sort((a, b) =>
+          a.color.localeCompare(b.color),
+        ),
+      )
     })
   }, [])
 
@@ -70,14 +82,30 @@ export function Overview() {
             </option>
           ))}
         </select>
-        <select value={colorFilter} onChange={(e) => setColorFilter(e.target.value)}>
-          <option value="">Все цвета</option>
-          {COLOR_PALETTE.map((c) => (
-            <option key={c.hex} value={c.name}>
-              {c.name}
-            </option>
+        <div className="color-palette">
+          <button
+            type="button"
+            className={`color-palette-custom${colorFilter === '' ? ' selected' : ''}`}
+            title="Все цвета"
+            aria-label="Все цвета"
+            onClick={() => setColorFilter('')}
+          >
+            ×
+          </button>
+          {colorOptions.map((c) => (
+            <button
+              key={c.color}
+              type="button"
+              className={`color-palette-swatch${colorFilter === c.color ? ' selected' : ''}`}
+              style={c.color_hex ? { background: c.color_hex } : undefined}
+              title={c.color}
+              aria-label={c.color}
+              onClick={() => setColorFilter(colorFilter === c.color ? '' : c.color)}
+            >
+              {!c.color_hex && '?'}
+            </button>
           ))}
-        </select>
+        </div>
         {hasFilters && (
           <button type="button" className="link-button" onClick={resetFilters}>
             Сбросить фильтры
