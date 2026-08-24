@@ -73,6 +73,16 @@ docs/
 
 Проверяет `python`/`uv`/`npm` в PATH. При первом запуске создаёт `backend/.env`, спрашивает пароль для `admin` (Enter — будет пароль `admin`) и сам генерирует `SECRET_KEY` и bcrypt-хэш — руками ничего заполнять не нужно. Дальше сам делает `uv sync` + `alembic upgrade head` и `npm install`, поднимает backend и frontend каждый в своём окне PowerShell и открывает `localhost:5173` в браузере. По сути автоматизирует «Вариант 1» ниже — Docker он не трогает.
 
+### Вариант 0.5 — один скрипт, только Docker (без Caddy, для не-разработчика)
+
+Не нужны `python`/`uv`/`npm` на хосте — только [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+
+```powershell
+.\scripts\run-local.ps1
+```
+
+При первом запуске спрашивает пароль для `admin` (Enter — будет `admin`), сама генерирует `SECRET_KEY` и bcrypt-хэш через сам backend-образ (без Python на хосте) и создаёт корневой `.env` — руками ничего заполнять не нужно, включая экранирование `$` в хэше. Дальше поднимает `backend` и `frontend` через `docker compose` без Caddy (`docker-compose.local.yml`) и открывает `http://localhost:8080`. Остановить — `.\scripts\stop-local.ps1` (данные в `./data` сохраняются).
+
 ### Вариант 1 — напрямую
 
 Backend:

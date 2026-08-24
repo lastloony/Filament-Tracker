@@ -38,7 +38,7 @@ if (-not (Test-Path $BackendEnv)) {
     }
 
     $secretKeyBytes = New-Object byte[] 32
-    [System.Security.Cryptography.RandomNumberGenerator]::Fill($secretKeyBytes)
+    [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($secretKeyBytes)
     $secretKey = [System.Convert]::ToBase64String($secretKeyBytes)
     $passwordHash = uv run python -c "import bcrypt, sys; print(bcrypt.hashpw(sys.argv[1].encode(), bcrypt.gensalt()).decode())" $password
 
