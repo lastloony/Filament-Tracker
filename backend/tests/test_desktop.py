@@ -101,6 +101,7 @@ class DesktopIntegration(unittest.TestCase):
             _, client, base, bootstrap = self.start_backend(folder, [sys.executable, "-c", script])
             self.assert_status(401, lambda: self.request(client, base + "/api/desktop/updates"))
             self.assert_status(401, lambda: self.request(client, base + "/api/desktop/updates/open", "POST"))
+            self.assert_status(401, lambda: client.open(base + "/api/desktop/backups/download", timeout=10))
             client.open(bootstrap, timeout=10).close()
             _, brands = self.request(client, base + "/api/settings/brands")
             self.assertEqual(len(brands), 18)
@@ -153,6 +154,26 @@ class DesktopIntegration(unittest.TestCase):
             self.assertEqual(unnamed["brand"], "Нонейм")
             for invalid_color in (None, "", "   ", 123):
                 self.assert_status(422, lambda: self.request(client, base + f"/api/filaments/{unpriced['id']}", "PATCH", {"color": invalid_color}))
+            self.request(client, base + "/api/settings/reorder-rules", "POST",
+                         {"material": "PLA", "color": "Чёрный", "threshold_g": 100})
+            _, filaments = self.request(client, base + "/api/filaments")
+            exported = Path(temp) / "manual-backup.db"
+            with client.open(base + "/api/desktop/backups/download", timeout=10) as response:
+                self.assertEqual(response.headers.get_content_type(), "application/vnd.sqlite3")
+                self.assertIn("attachment;", response.headers["Content-Disposition"])
+                self.assertIn("-backup-", response.headers["Content-Disposition"])
+                self.assertEqual(response.headers["Cache-Control"], "no-store")
+                exported.write_bytes(response.read())
+            with closing(sqlite3.connect(exported)) as snapshot:
+                self.assertEqual(snapshot.execute("PRAGMA integrity_check").fetchone()[0], "ok")
+                self.assertEqual(snapshot.execute("SELECT count(*) FROM filaments").fetchone()[0], len(filaments))
+                self.assertEqual(snapshot.execute("SELECT count(*) FROM brands").fetchone()[0], 18)
+                self.assertEqual(snapshot.execute("SELECT code FROM currencies WHERE is_base=1").fetchone()[0], "EUR")
+                self.assertEqual(snapshot.execute("SELECT count(*) FROM reorder_rules").fetchone()[0], 1)
+                self.assertIsNotNone(snapshot.execute("SELECT version_num FROM alembic_version").fetchone())
+            self.request(client, base + "/api/filaments", "POST", minimal)
+            with closing(sqlite3.connect(exported)) as snapshot:
+                self.assertEqual(snapshot.execute("SELECT count(*) FROM filaments").fetchone()[0], len(filaments))
 
     def test_packaged_lifecycle(self):
         self.assertTrue(EXE.is_file(), "Build backend with scripts/package-desktop.py first")

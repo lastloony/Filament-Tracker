@@ -19,6 +19,7 @@ import { ApiError } from '../api/client'
 import { COLOR_PALETTE } from '../colors'
 import { ColorSwatch } from '../components/ColorSwatch'
 import { DesktopUpdates } from '../components/DesktopUpdates'
+import { DesktopBackups } from '../components/DesktopBackups'
 
 function NameTable({
   title,
@@ -279,6 +280,7 @@ export function Settings({ desktop = false }: { desktop?: boolean }) {
       {error && <p role="alert">{error}</p>}
 
       {desktop && <DesktopUpdates />}
+      {desktop && <DesktopBackups />}
 
       <div className="chart-grid">
         <div className="chart-card">

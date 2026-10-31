@@ -89,6 +89,9 @@ def main() -> None:
     from app.desktop_updates import register_updates
 
     register_updates(app, desktop_user)
+    from app.desktop_backups import register_backups
+
+    register_backups(app, desktop_user, data_dir / "filament.db")
 
     @app.middleware("http")
     async def restrict_desktop(request: Request, call_next):

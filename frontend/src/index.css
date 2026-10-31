@@ -394,6 +394,39 @@ th.sortable {
   gap: 20px;
 }
 
+.color-inventory-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: center;
+}
+
+.color-inventory-chart {
+  min-width: 0;
+}
+
+.color-inventory-legend {
+  width: 100%;
+}
+
+.color-inventory-legend caption {
+  text-align: left;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding-bottom: 8px;
+}
+
+.color-inventory-legend td:first-child {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 700px) {
+  .color-inventory-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+}
+
 .low-stock {
   color: var(--error);
   font-weight: 600;

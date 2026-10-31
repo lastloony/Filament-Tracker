@@ -4,6 +4,7 @@ import { getOverview, getOverviewByBrand, type InventoryByBrand, type InventoryO
 import { listMaterials, type Material } from '../api/settings'
 import { ApiError } from '../api/client'
 import { ColorSwatch } from '../components/ColorSwatch'
+import { ColorInventoryChart } from '../components/ColorInventoryChart'
 
 function formatWeight(grams: number): string {
   if (grams >= 1000) {
@@ -148,6 +149,8 @@ export function Overview() {
           <div className="stat-tile-value">{overview.reorder.length}</div>
         </div>
       </div>
+
+      <ColorInventoryChart rows={overview.by_material_color} filtered={hasFilters} />
 
       <div className="chart-grid">
         <div className="chart-card">
