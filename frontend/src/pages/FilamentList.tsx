@@ -128,11 +128,11 @@ export function FilamentList() {
     }),
     columnHelper.accessor('price', {
       header: 'Цена',
-      cell: (c) => `${c.getValue()} ${c.row.original.currency}`,
+      cell: (c) => c.getValue() === null ? '—' : `${c.getValue()} ${c.row.original.currency}`,
     }),
     columnHelper.accessor('price_per_kg', {
       header: 'Цена/кг',
-      cell: (c) => `${c.getValue()} ${c.row.original.currency}`,
+      cell: (c) => c.getValue() === null ? '—' : `${c.getValue()} ${c.row.original.currency}`,
     }),
     columnHelper.accessor('rating', { header: 'Рейтинг', cell: (c) => c.getValue() ?? '—' }),
     columnHelper.accessor('vendor', { header: 'Где куплено', cell: (c) => c.getValue() ?? '—' }),

@@ -2,7 +2,7 @@ import { apiFetch } from './client'
 
 export type StatsByGroup = {
   group: string
-  total_spent: string
+  total_spent: string | null
   remaining_g: number
   count: number
   avg_rating: number | null
@@ -22,6 +22,7 @@ export type StatsSummary = {
   remaining_kg: string
   total_invested: InvestedByCurrency[]
   avg_rating: number | null
+  missing_price_count: number
 }
 
 export type InventoryByMaterialColor = {

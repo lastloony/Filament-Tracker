@@ -40,7 +40,10 @@ def list_filaments(
 
 
 def create_filament(db: Session, data: schemas.FilamentCreate) -> models.Filament:
-    filament = models.Filament(**data.model_dump())
+    values = data.model_dump()
+    if values["currency"] is None:
+        values["currency"] = db.scalar(select(models.Currency.code).where(models.Currency.is_base.is_(True))) or "RUB"
+    filament = models.Filament(**values)
     db.add(filament)
     db.commit()
     db.refresh(filament)
@@ -49,6 +52,8 @@ def create_filament(db: Session, data: schemas.FilamentCreate) -> models.Filamen
 
 def update_filament(db: Session, filament: models.Filament, data: schemas.FilamentUpdate) -> models.Filament:
     for field, value in data.model_dump(exclude_unset=True).items():
+        if field == "currency" and value is None:
+            value = db.scalar(select(models.Currency.code).where(models.Currency.is_base.is_(True))) or "RUB"
         setattr(filament, field, value)
     db.commit()
     db.refresh(filament)
@@ -64,7 +69,7 @@ def _stats_by_field(db: Session, field) -> list[Row]:
     query = (
         select(
             field,
-            func.coalesce(func.sum(models.Filament.price), 0),
+            func.sum(models.Filament.price),
             func.coalesce(func.sum(models.Filament.weight_remaining_g), 0),
             func.count(models.Filament.id),
             func.avg(models.Filament.rating),
@@ -92,7 +97,7 @@ def stats_by_rating(db: Session) -> list[Row]:
     return list(db.execute(query).all())
 
 
-def stats_summary(db: Session) -> tuple[int, float | None, list[Row]]:
+def stats_summary(db: Session) -> tuple[int, float | None, list[Row], int]:
     totals_query = select(
         func.coalesce(func.sum(models.Filament.weight_remaining_g), 0),
         func.avg(models.Filament.rating),
@@ -101,12 +106,14 @@ def stats_summary(db: Session) -> tuple[int, float | None, list[Row]]:
 
     invested_query = (
         select(models.Filament.currency, func.sum(models.Filament.price))
+        .where(models.Filament.price.is_not(None))
         .group_by(models.Filament.currency)
         .order_by(models.Filament.currency)
     )
     invested_by_currency = list(db.execute(invested_query).all())
 
-    return remaining_g, avg_rating, invested_by_currency
+    missing_price_count = db.scalar(select(func.count()).select_from(models.Filament).where(models.Filament.price.is_(None)))
+    return remaining_g, avg_rating, invested_by_currency, missing_price_count
 
 
 def inventory_by_material_color(
