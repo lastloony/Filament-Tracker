@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from app import schemas
 from app.auth import (
@@ -40,5 +40,5 @@ def logout(response: Response):
 
 
 @router.get("/me")
-def me(username: str = Depends(get_current_user)):
-    return {"username": username}
+def me(request: Request, username: str = Depends(get_current_user)):
+    return {"username": username, "desktop": getattr(request.app.state, "desktop_mode", False)}

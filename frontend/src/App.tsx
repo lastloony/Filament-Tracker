@@ -12,10 +12,14 @@ type AuthState = 'checking' | 'authenticated' | 'anonymous'
 
 function App() {
   const [authState, setAuthState] = useState<AuthState>('checking')
+  const [desktop, setDesktop] = useState(false)
 
   useEffect(() => {
     me()
-      .then(() => setAuthState('authenticated'))
+      .then((session) => {
+        setDesktop(session.desktop)
+        setAuthState('authenticated')
+      })
       .catch(() => setAuthState('anonymous'))
   }, [])
 
@@ -42,7 +46,7 @@ function App() {
               <Link to="/stats">Статистика</Link>
               <Link to="/settings">Настройки</Link>
             </div>
-            <button
+            {!desktop && <button
               type="button"
               onClick={async () => {
                 await apiLogout()
@@ -50,7 +54,7 @@ function App() {
               }}
             >
               Выйти
-            </button>
+            </button>}
           </nav>
           <main>
             <Routes>

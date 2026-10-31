@@ -1,0 +1,44 @@
+name: Desktop Windows prototype
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - uses: astral-sh/setup-uv@v6
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install backend build dependencies
+        run: uv sync --project backend --group desktop --frozen
+      - name: Build web interface
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+          npm run lint
+      - name: Package local backend
+        run: backend/.venv/Scripts/python.exe scripts/package-desktop.py
+      - name: Check packaged lifecycle
+        run: backend/.venv/Scripts/python.exe -m unittest discover -s backend/tests -v
+      - name: Build Windows installer
+        working-directory: desktop
+        run: |
+          npm ci
+          npm run tauri -- icon icon.svg
+          npm run build -- -- --locked
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Filament-Tracker-Windows
+          path: desktop/src-tauri/target/release/bundle/nsis/*-setup.exe
+          if-no-files-found: error
