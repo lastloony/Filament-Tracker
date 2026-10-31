@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { createFilament, getFilament, updateFilament, type FilamentInput } from '../api/filaments'
 import { ApiError } from '../api/client'
 import { listBrands, listCurrencies, listMaterials, type Brand, type Currency, type Material } from '../api/settings'
@@ -43,7 +43,7 @@ export function FilamentForm() {
         const base = c.find((currency) => currency.is_base)
         if (base) setForm((prev) => ({ ...prev, currency: base.code }))
       }
-    })
+    }).catch((err) => setError(err instanceof ApiError ? err.message : 'Не удалось загрузить справочники'))
   }, [isEditing])
 
   useEffect(() => {
@@ -110,19 +110,24 @@ export function FilamentForm() {
 
       <label>
         Бренд
-        <input
-          type="text"
-          list="brands"
+        <select
           value={form.brand}
           onChange={(e) => updateField('brand', e.target.value)}
           required
-        />
-        <datalist id="brands">
+        >
+          <option value="">Выберите бренд</option>
+          {form.brand && !brands.some((b) => b.name === form.brand) && (
+            <option value={form.brand}>{form.brand}</option>
+          )}
           {brands.map((b) => (
-            <option key={b.id} value={b.name} />
+            <option key={b.id} value={b.name}>{b.name}</option>
           ))}
-        </datalist>
+        </select>
       </label>
+      <p className="overview-hint">
+        {brands.length === 0 ? 'Сначала добавьте бренды в настройках. ' : 'Не нашли нужный бренд? '}
+        <Link to="/settings">Добавить бренд в настройках</Link>
+      </p>
 
       <label>
         Материал

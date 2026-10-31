@@ -12,6 +12,7 @@ import sqlite3
 import subprocess
 import tempfile
 import threading
+import tomllib
 import unittest
 import urllib.error
 import urllib.parse
@@ -91,6 +92,13 @@ class DesktopIntegration(unittest.TestCase):
             self.assert_status(403, lambda: client.open(bootstrap, timeout=10))
             _, session = self.request(client, base + "/api/auth/me")
             self.assertTrue(session["desktop"])
+            _, version = self.request(client, base + "/api/version")
+            expected_version = tomllib.loads((ROOT / "backend/pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+            self.assertEqual(version["version"], expected_version)
+            code, brand = self.request(client, base + "/api/settings/brands", "POST", {"name": "Test"})
+            self.assertEqual(code, 201)
+            _, brands = self.request(client, base + "/api/settings/brands")
+            self.assertIn(brand, brands)
             self.assert_status(403, lambda: self.request(client, base + "/api/auth/login", "POST", {}))
             payload = {"brand": "Test", "material": "PLA", "color": "Black", "color_hex": "#000000",
                        "weight_total_g": 1000, "weight_remaining_g": 900, "price": "1200", "currency": "RUB"}
@@ -116,6 +124,8 @@ class DesktopIntegration(unittest.TestCase):
             client2.open(bootstrap2, timeout=10).close()
             _, saved = self.request(client2, base2 + f"/api/filaments/{filament_id}")
             self.assertEqual(saved["weight_remaining_g"], 200)
+            _, saved_brands = self.request(client2, base2 + "/api/settings/brands")
+            self.assertIn(brand, saved_brands)
             copies = list((folder / "backups").glob("*.db"))
             self.assertEqual(len(copies), 1)
             with closing(sqlite3.connect(copies[0])) as backup:

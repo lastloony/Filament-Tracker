@@ -2,3 +2,4 @@ node_modules/
 src-tauri/resources/filament-backend/
 src-tauri/icons/
 src-tauri/target/
+src-tauri/gen/

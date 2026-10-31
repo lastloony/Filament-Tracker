@@ -325,8 +325,8 @@ export function Settings() {
         </div>
 
         <NameTable
-          title="Производители филамента"
-          columnLabel="Название"
+          title="Бренды"
+          columnLabel="Название бренда"
           items={brands}
           onAdd={async (name) => {
             const created = await createBrand(name)
