@@ -64,7 +64,7 @@ function App() {
               <Route path="/filaments/new" element={<FilamentForm />} />
               <Route path="/filaments/:id/edit" element={<FilamentForm />} />
               <Route path="/stats" element={<Stats />} />
-              <Route path="/settings" element={<Settings />} />
+              <Route path="/settings" element={<Settings desktop={desktop} />} />
             </Routes>
           </main>
         </div>

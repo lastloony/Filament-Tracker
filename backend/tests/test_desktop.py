@@ -8,8 +8,10 @@ from contextlib import closing, contextmanager
 import json
 from pathlib import Path
 import queue
+import shutil
 import sqlite3
 import subprocess
+import sys
 import tempfile
 import threading
 import tomllib
@@ -32,10 +34,10 @@ class DesktopIntegration(unittest.TestCase):
             finally:
                 self.doCleanups()
 
-    def start_backend(self, folder: Path):
+    def start_backend(self, folder: Path, executable=None):
         log = (folder / "test.log").open("ab")
         child = subprocess.Popen(
-            [str(EXE), "--data-dir", str(folder)],
+            [*(executable or [str(EXE)]), "--data-dir", str(folder)],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=log,
         )
         self.addCleanup(log.close)
@@ -78,6 +80,36 @@ class DesktopIntegration(unittest.TestCase):
         with self.assertRaises(urllib.error.HTTPError) as result:
             operation()
         self.assertEqual(result.exception.code, expected)
+
+    def test_source_desktop_updates(self):
+        with self.temporary_data() as temp:
+            resources = Path(temp) / "resources"
+            resources.mkdir()
+            shutil.copytree(ROOT / "backend/alembic", resources / "alembic", ignore=shutil.ignore_patterns("__pycache__"))
+            shutil.copytree(ROOT / "frontend/dist", resources / "frontend")
+            folder = Path(temp) / "data"
+            folder.mkdir()
+            script = (
+                "import sys,io; "
+                f"sys.path.insert(0,{str(ROOT / 'backend')!r}); "
+                f"sys._MEIPASS={str(resources)!r}; "
+                "from app import desktop_updates; "
+                "desktop_updates.urlopen=lambda *a,**k: io.BytesIO(b'{\"tag_name\":\"v99.0.0\"}'); "
+                "desktop_updates.webbrowser.open=lambda url: url==desktop_updates.RELEASES_URL; "
+                "import desktop_entry; desktop_entry.main()"
+            )
+            _, client, base, bootstrap = self.start_backend(folder, [sys.executable, "-c", script])
+            self.assert_status(401, lambda: self.request(client, base + "/api/desktop/updates"))
+            self.assert_status(401, lambda: self.request(client, base + "/api/desktop/updates/open", "POST"))
+            client.open(bootstrap, timeout=10).close()
+            _, brands = self.request(client, base + "/api/settings/brands")
+            self.assertEqual(len(brands), 15)
+            _, result = self.request(client, base + "/api/desktop/updates")
+            self.assertTrue(result["update_available"])
+            self.assertEqual(result["latest_version"], "99.0.0")
+            self.assertEqual(self.request(client, base + "/api/desktop/updates/open", "POST")[0], 200)
+            self.assert_status(403, lambda: self.request(client, base + "/api/desktop/updates/open", "POST",
+                                                        headers={"Origin": "https://untrusted.example"}))
 
     def test_packaged_lifecycle(self):
         self.assertTrue(EXE.is_file(), "Build backend with scripts/package-desktop.py first")

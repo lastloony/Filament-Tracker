@@ -86,6 +86,9 @@ def main() -> None:
         return "desktop"
 
     app.dependency_overrides[get_current_user] = desktop_user
+    from app.desktop_updates import register_updates
+
+    register_updates(app, desktop_user)
 
     @app.middleware("http")
     async def restrict_desktop(request: Request, call_next):

@@ -18,6 +18,7 @@ import {
 import { ApiError } from '../api/client'
 import { COLOR_PALETTE } from '../colors'
 import { ColorSwatch } from '../components/ColorSwatch'
+import { DesktopUpdates } from '../components/DesktopUpdates'
 
 function NameTable({
   title,
@@ -214,7 +215,7 @@ function ReorderRulesSection({
   )
 }
 
-export function Settings() {
+export function Settings({ desktop = false }: { desktop?: boolean }) {
   const [brands, setBrands] = useState<Brand[]>([])
   const [materials, setMaterials] = useState<Material[]>([])
   const [currencies, setCurrencies] = useState<Currency[]>([])
@@ -276,6 +277,8 @@ export function Settings() {
     <div className="settings-page">
       <h1>Настройки</h1>
       {error && <p role="alert">{error}</p>}
+
+      {desktop && <DesktopUpdates />}
 
       <div className="chart-grid">
         <div className="chart-card">

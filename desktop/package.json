@@ -1,7 +1,7 @@
 {
   "name": "filament-tracker-desktop",
   "private": true,
-  "version": "0.3.7",
+  "version": "0.3.9",
   "scripts": { "tauri": "tauri", "build": "tauri build" },
   "devDependencies": { "@tauri-apps/cli": "^2.0.0" }
 }
