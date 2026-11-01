@@ -80,13 +80,16 @@ export function Stats() {
   if (error) return <p role="alert">{error}</p>
   if (!summary) return <p>Загрузка...</p>
 
-  const brandData = byBrand.map((g) => ({ name: g.group, spent: Number(g.total_spent) }))
+  const brandData = byBrand.filter((g) => g.total_spent !== null).map((g) => ({ name: g.group, spent: Number(g.total_spent) }))
   const materialData = byMaterial.map((g) => ({ name: g.group, remaining_kg: Math.round((g.remaining_g / 1000) * 100) / 100 }))
-  const ratingData = byRating.map((r) => ({ label: r.rating === null ? 'не пробовал' : String(r.rating), count: r.count }))
+  const ratingData = byRating.map((r) => ({ label: r.rating === null ? 'не указан' : String(r.rating), count: r.count }))
 
   return (
     <div className="stats-page">
       <h1>Статистика</h1>
+      {summary.missing_price_count > 0 && (
+        <p>Без указанной цены: {summary.missing_price_count} катушек. В расходах учитываются только известные цены.</p>
+      )}
 
       <div className="kpi-row">
         <StatTile label="Остаток" value={`${summary.remaining_kg} кг`} />

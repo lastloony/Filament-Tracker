@@ -62,6 +62,25 @@ form.filament-form {
   margin: 0 auto;
 }
 
+.optional-details {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px;
+}
+
+.optional-details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.optional-details[open] > summary {
+  margin-bottom: 12px;
+}
+
+.optional-details > label {
+  margin-top: 12px;
+}
+
 form h1 {
   font-size: 20px;
   margin: 0 0 8px;
@@ -175,6 +194,8 @@ main {
 
 .filters {
   display: flex;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 16px;
 }
@@ -373,6 +394,39 @@ th.sortable {
   gap: 20px;
 }
 
+.color-inventory-layout {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) minmax(0, 1fr);
+  gap: 24px;
+  align-items: center;
+}
+
+.color-inventory-chart {
+  min-width: 0;
+}
+
+.color-inventory-legend {
+  width: 100%;
+}
+
+.color-inventory-legend caption {
+  text-align: left;
+  color: var(--text-muted);
+  font-size: 13px;
+  padding-bottom: 8px;
+}
+
+.color-inventory-legend td:first-child {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 700px) {
+  .color-inventory-layout {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+}
+
 .low-stock {
   color: var(--error);
   font-weight: 600;
@@ -396,6 +450,23 @@ th.sortable {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+
+.color-cell-clickable {
+  cursor: pointer;
+}
+
+.color-cell-clickable:hover {
+  text-decoration: underline;
+}
+
+.overview-brand-breakdown {
+  background: var(--bg);
+  padding: 10px 16px !important;
+}
+
+.overview-brand-breakdown table {
+  margin: 0;
 }
 
 .color-palette {
@@ -440,6 +511,42 @@ th.sortable {
   border-style: solid;
   outline: 2px solid var(--accent);
   outline-offset: 1px;
+}
+
+.overview-filters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.material-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.material-tab {
+  width: auto;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.material-tab.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.color-palette-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .color-hidden-input {

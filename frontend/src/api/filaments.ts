@@ -8,9 +8,9 @@ export type Filament = {
   color_hex: string | null
   weight_total_g: number
   weight_remaining_g: number
-  price: string
+  price: string | null
   currency: string
-  price_per_kg: string
+  price_per_kg: string | null
   rating: number | null
   vendor: string | null
   purchase_date: string | null
@@ -22,11 +22,11 @@ export type Filament = {
 export type FilamentInput = {
   brand: string
   material: string
-  color: string | null
+  color: string
   color_hex: string | null
   weight_total_g: number
   weight_remaining_g: number
-  price: string
+  price: string | null
   currency: string
   rating: number | null
   vendor: string | null
@@ -67,4 +67,10 @@ export function updateFilament(id: number, data: Partial<FilamentInput>): Promis
 
 export function deleteFilament(id: number): Promise<void> {
   return apiFetch(`/filaments/${id}`, { method: 'DELETE' })
+}
+
+export function consumeFilament(id: number, weightUsedG: number): Promise<Filament> {
+  return apiFetch(`/filaments/${id}/consume`, {
+    method: 'POST', body: JSON.stringify({ weight_used_g: weightUsedG }),
+  })
 }

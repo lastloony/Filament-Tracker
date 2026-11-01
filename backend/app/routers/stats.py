@@ -36,24 +36,32 @@ def by_rating(db: Session = Depends(get_db)):
 
 @router.get("/summary", response_model=schemas.StatsSummary)
 def summary(db: Session = Depends(get_db)):
-    remaining_g, avg_rating, invested_by_currency = crud.stats_summary(db)
+    remaining_g, avg_rating, invested_by_currency, missing_price_count = crud.stats_summary(db)
     return schemas.StatsSummary(
         remaining_kg=Decimal(remaining_g) / 1000,
         total_invested=[
             schemas.InvestedByCurrency(currency=currency, total=total) for currency, total in invested_by_currency
         ],
         avg_rating=avg_rating,
+        missing_price_count=missing_price_count,
     )
 
 
 @router.get("/overview", response_model=schemas.InventoryOverview)
-def overview(db: Session = Depends(get_db)):
+def overview(
+    brand: str | None = None,
+    material: str | None = None,
+    color: str | None = None,
+    db: Session = Depends(get_db),
+):
     return schemas.InventoryOverview(
         by_material_color=[
             schemas.InventoryByMaterialColor(
-                material=material, color=color, color_hex=color_hex, remaining_g=remaining_g, spool_count=count
+                material=material_, color=color_, color_hex=color_hex, remaining_g=remaining_g, spool_count=count
             )
-            for material, color, color_hex, remaining_g, count in crud.inventory_by_material_color(db)
+            for material_, color_, color_hex, remaining_g, count in crud.inventory_by_material_color(
+                db, brand=brand, material=material, color=color
+            )
         ],
         reorder=[
             schemas.ReorderItem(
@@ -64,6 +72,14 @@ def overview(db: Session = Depends(get_db)):
                 color_hex=f.color_hex,
                 remaining_g=f.weight_remaining_g,
             )
-            for f in crud.reorder_candidates(db)
+            for f in crud.reorder_candidates(db, brand=brand, material=material, color=color)
         ],
     )
+
+
+@router.get("/overview/by-brand", response_model=list[schemas.InventoryByBrand])
+def overview_by_brand(material: str, color: str, db: Session = Depends(get_db)):
+    return [
+        schemas.InventoryByBrand(brand=brand, remaining_g=remaining_g, spool_count=count)
+        for brand, remaining_g, count in crud.inventory_by_brand(db, material=material, color=color)
+    ]

@@ -11,6 +11,6 @@ export function logout(): Promise<{ status: string }> {
   return apiFetch('/auth/logout', { method: 'POST' })
 }
 
-export function me(): Promise<{ username: string }> {
+export function me(): Promise<{ username: string; desktop: boolean }> {
   return apiFetch('/auth/me')
 }

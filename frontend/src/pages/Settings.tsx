@@ -18,6 +18,8 @@ import {
 import { ApiError } from '../api/client'
 import { COLOR_PALETTE } from '../colors'
 import { ColorSwatch } from '../components/ColorSwatch'
+import { DesktopUpdates } from '../components/DesktopUpdates'
+import { DesktopBackups } from '../components/DesktopBackups'
 
 function NameTable({
   title,
@@ -214,7 +216,7 @@ function ReorderRulesSection({
   )
 }
 
-export function Settings() {
+export function Settings({ desktop = false }: { desktop?: boolean }) {
   const [brands, setBrands] = useState<Brand[]>([])
   const [materials, setMaterials] = useState<Material[]>([])
   const [currencies, setCurrencies] = useState<Currency[]>([])
@@ -277,6 +279,9 @@ export function Settings() {
       <h1>Настройки</h1>
       {error && <p role="alert">{error}</p>}
 
+      {desktop && <DesktopUpdates />}
+      {desktop && <DesktopBackups />}
+
       <div className="chart-grid">
         <div className="chart-card">
           <h2>Валюта</h2>
@@ -325,8 +330,8 @@ export function Settings() {
         </div>
 
         <NameTable
-          title="Производители филамента"
-          columnLabel="Название"
+          title="Бренды"
+          columnLabel="Название бренда"
           items={brands}
           onAdd={async (name) => {
             const created = await createBrand(name)

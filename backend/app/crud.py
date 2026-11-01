@@ -40,7 +40,10 @@ def list_filaments(
 
 
 def create_filament(db: Session, data: schemas.FilamentCreate) -> models.Filament:
-    filament = models.Filament(**data.model_dump())
+    values = data.model_dump()
+    if values["currency"] is None:
+        values["currency"] = db.scalar(select(models.Currency.code).where(models.Currency.is_base.is_(True))) or "RUB"
+    filament = models.Filament(**values)
     db.add(filament)
     db.commit()
     db.refresh(filament)
@@ -49,6 +52,8 @@ def create_filament(db: Session, data: schemas.FilamentCreate) -> models.Filamen
 
 def update_filament(db: Session, filament: models.Filament, data: schemas.FilamentUpdate) -> models.Filament:
     for field, value in data.model_dump(exclude_unset=True).items():
+        if field == "currency" and value is None:
+            value = db.scalar(select(models.Currency.code).where(models.Currency.is_base.is_(True))) or "RUB"
         setattr(filament, field, value)
     db.commit()
     db.refresh(filament)
@@ -60,11 +65,28 @@ def delete_filament(db: Session, filament: models.Filament) -> None:
     db.commit()
 
 
+def consume_filament(db: Session, filament_id: int, weight_used_g: int) -> models.Filament | None:
+    if weight_used_g <= 0:
+        raise ValueError("Расход должен быть больше нуля")
+    result = db.execute(
+        update(models.Filament)
+        .where(models.Filament.id == filament_id, models.Filament.weight_remaining_g >= weight_used_g)
+        .values(weight_remaining_g=models.Filament.weight_remaining_g - weight_used_g)
+    )
+    if result.rowcount != 1:
+        db.rollback()
+        return None
+    db.commit()
+    filament = db.get(models.Filament, filament_id)
+    db.refresh(filament)
+    return filament
+
+
 def _stats_by_field(db: Session, field) -> list[Row]:
     query = (
         select(
             field,
-            func.coalesce(func.sum(models.Filament.price), 0),
+            func.sum(models.Filament.price),
             func.coalesce(func.sum(models.Filament.weight_remaining_g), 0),
             func.count(models.Filament.id),
             func.avg(models.Filament.rating),
@@ -92,7 +114,7 @@ def stats_by_rating(db: Session) -> list[Row]:
     return list(db.execute(query).all())
 
 
-def stats_summary(db: Session) -> tuple[int, float | None, list[Row]]:
+def stats_summary(db: Session) -> tuple[int, float | None, list[Row], int]:
     totals_query = select(
         func.coalesce(func.sum(models.Filament.weight_remaining_g), 0),
         func.avg(models.Filament.rating),
@@ -101,35 +123,67 @@ def stats_summary(db: Session) -> tuple[int, float | None, list[Row]]:
 
     invested_query = (
         select(models.Filament.currency, func.sum(models.Filament.price))
+        .where(models.Filament.price.is_not(None))
         .group_by(models.Filament.currency)
         .order_by(models.Filament.currency)
     )
     invested_by_currency = list(db.execute(invested_query).all())
 
-    return remaining_g, avg_rating, invested_by_currency
+    missing_price_count = db.scalar(select(func.count()).select_from(models.Filament).where(models.Filament.price.is_(None)))
+    return remaining_g, avg_rating, invested_by_currency, missing_price_count
 
 
-def inventory_by_material_color(db: Session) -> list[Row]:
-    query = (
-        select(
-            models.Filament.material,
-            models.Filament.color,
-            func.max(models.Filament.color_hex),
-            func.sum(models.Filament.weight_remaining_g),
-            func.count(models.Filament.id),
-        )
-        .group_by(models.Filament.material, models.Filament.color)
-        .order_by(models.Filament.material, models.Filament.color)
+def inventory_by_material_color(
+    db: Session, *, brand: str | None = None, material: str | None = None, color: str | None = None
+) -> list[Row]:
+    query = select(
+        models.Filament.material,
+        models.Filament.color,
+        func.max(models.Filament.color_hex),
+        func.sum(models.Filament.weight_remaining_g),
+        func.count(models.Filament.id),
+    )
+    if brand:
+        query = query.where(models.Filament.brand == brand)
+    if material:
+        query = query.where(models.Filament.material == material)
+    if color:
+        query = query.where(models.Filament.color == color)
+    query = query.group_by(models.Filament.material, models.Filament.color).order_by(
+        models.Filament.material, models.Filament.color
     )
     return list(db.execute(query).all())
 
 
-def reorder_candidates(db: Session) -> list[models.Filament]:
+def inventory_by_brand(db: Session, *, material: str, color: str) -> list[Row]:
+    query = (
+        select(
+            models.Filament.brand,
+            func.sum(models.Filament.weight_remaining_g),
+            func.count(models.Filament.id),
+        )
+        .where(models.Filament.material == material, models.Filament.color == color)
+        .group_by(models.Filament.brand)
+        .order_by(models.Filament.brand)
+    )
+    return list(db.execute(query).all())
+
+
+def reorder_candidates(
+    db: Session, *, brand: str | None = None, material: str | None = None, color: str | None = None
+) -> list[models.Filament]:
     rules = list(db.execute(select(models.ReorderRule)).scalars())
     specific_thresholds = {(r.brand, r.material, r.color): r.threshold_g for r in rules if r.brand}
     general_thresholds = {(r.material, r.color): r.threshold_g for r in rules if not r.brand}
 
-    filaments = list(db.execute(select(models.Filament)).scalars())
+    query = select(models.Filament)
+    if brand:
+        query = query.where(models.Filament.brand == brand)
+    if material:
+        query = query.where(models.Filament.material == material)
+    if color:
+        query = query.where(models.Filament.color == color)
+    filaments = list(db.execute(query).scalars())
     candidates = []
     for f in filaments:
         threshold = specific_thresholds.get((f.brand, f.material, f.color))

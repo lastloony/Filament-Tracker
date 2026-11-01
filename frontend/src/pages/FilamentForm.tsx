@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import { createFilament, getFilament, updateFilament, type FilamentInput } from '../api/filaments'
 import { ApiError } from '../api/client'
 import { listBrands, listCurrencies, listMaterials, type Brand, type Currency, type Material } from '../api/settings'
@@ -12,7 +12,7 @@ const EMPTY_FORM: FilamentInput = {
   color_hex: null,
   weight_total_g: 1000,
   weight_remaining_g: 1000,
-  price: '',
+  price: null,
   currency: 'RUB',
   rating: null,
   vendor: '',
@@ -33,6 +33,7 @@ export function FilamentForm() {
   const [materials, setMaterials] = useState<Material[]>([])
   const [currencies, setCurrencies] = useState<Currency[]>([])
   const colorInputRef = useRef<HTMLInputElement>(null)
+  const remainingEdited = useRef(false)
 
   useEffect(() => {
     Promise.all([listBrands(), listMaterials(), listCurrencies()]).then(([b, m, c]) => {
@@ -43,7 +44,7 @@ export function FilamentForm() {
         const base = c.find((currency) => currency.is_base)
         if (base) setForm((prev) => ({ ...prev, currency: base.code }))
       }
-    })
+    }).catch((err) => setError(err instanceof ApiError ? err.message : 'Не удалось загрузить справочники'))
   }, [isEditing])
 
   useEffect(() => {
@@ -76,11 +77,17 @@ export function FilamentForm() {
   async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setError(null)
+    if (!form.color.trim()) {
+      setError('Укажите цвет: выберите его в палитре или введите название')
+      return
+    }
     setIsSubmitting(true)
 
     const payload: FilamentInput = {
       ...form,
-      color: form.color || null,
+      brand: form.brand.trim() || 'Нонейм',
+      price: form.price === '' ? null : form.price,
+      color: form.color.trim(),
       vendor: form.vendor || null,
       purchase_date: form.purchase_date || null,
       notes: form.notes || null,
@@ -107,22 +114,27 @@ export function FilamentForm() {
   return (
     <form className="filament-form" onSubmit={handleSubmit}>
       <h1>{isEditing ? 'Редактировать катушку' : 'Новая катушка'}</h1>
+      <p className="overview-hint">Укажите материал, цвет и вес. Если бренд не выбран, сохраним «Нонейм».</p>
 
       <label>
         Бренд
-        <input
-          type="text"
-          list="brands"
+        <select
           value={form.brand}
           onChange={(e) => updateField('brand', e.target.value)}
-          required
-        />
-        <datalist id="brands">
+        >
+          <option value="">Бренд неизвестен — Нонейм</option>
+          {form.brand && !brands.some((b) => b.name === form.brand) && (
+            <option value={form.brand}>{form.brand}</option>
+          )}
           {brands.map((b) => (
-            <option key={b.id} value={b.name} />
+            <option key={b.id} value={b.name}>{b.name}</option>
           ))}
-        </datalist>
+        </select>
       </label>
+      <p className="overview-hint">
+        Не нашли нужный бренд? Можно оставить «Нонейм» или{' '}
+        <Link to="/settings">Добавить бренд в настройках</Link>
+      </p>
 
       <label>
         Материал
@@ -183,6 +195,7 @@ export function FilamentForm() {
           value={form.color ?? ''}
           onChange={(e) => updateField('color', e.target.value)}
           placeholder="Название цвета"
+          required
         />
       </label>
 
@@ -193,7 +206,11 @@ export function FilamentForm() {
             type="number"
             min={1}
             value={form.weight_total_g}
-            onChange={(e) => updateField('weight_total_g', Number(e.target.value))}
+            onChange={(e) => {
+              const total = Number(e.target.value)
+              setForm((prev) => ({ ...prev, weight_total_g: total,
+                ...(!isEditing && !remainingEdited.current ? { weight_remaining_g: total } : {}) }))
+            }}
             required
           />
         </label>
@@ -204,12 +221,18 @@ export function FilamentForm() {
             type="number"
             min={0}
             value={form.weight_remaining_g}
-            onChange={(e) => updateField('weight_remaining_g', Number(e.target.value))}
+            onChange={(e) => {
+              remainingEdited.current = true
+              updateField('weight_remaining_g', Number(e.target.value))
+            }}
             required
           />
         </label>
       </div>
 
+      <details className="optional-details" open={isEditing}>
+        <summary>Дополнительно: покупка, рейтинг и заметки</summary>
+        <p className="overview-hint">Все поля ниже необязательны. Пустая цена — неизвестна, 0 — получено бесплатно.</p>
       <div className="form-row">
         <label>
           Цена
@@ -217,15 +240,16 @@ export function FilamentForm() {
             type="number"
             min={0}
             step="0.01"
-            value={form.price}
-            onChange={(e) => updateField('price', e.target.value)}
-            required
+            value={form.price ?? ''}
+            placeholder="Не указана"
+            onChange={(e) => updateField('price', e.target.value === '' ? null : e.target.value)}
           />
         </label>
 
         <label>
           Валюта
-          <select value={form.currency} onChange={(e) => updateField('currency', e.target.value)} required>
+          <select value={form.currency} onChange={(e) => updateField('currency', e.target.value)}
+            disabled={form.price === null || form.price === ''}>
             {form.currency && !currencies.some((c) => c.code === form.currency) && (
               <option value={form.currency}>{form.currency}</option>
             )}
@@ -245,7 +269,7 @@ export function FilamentForm() {
           value={form.rating ?? ''}
           onChange={(e) => updateField('rating', e.target.value === '' ? null : Number(e.target.value))}
         >
-          <option value="">— не пробовал</option>
+          <option value="">— не указан</option>
           {[1, 2, 3, 4, 5].map((n) => (
             <option key={n} value={n}>
               {n}
@@ -272,6 +296,7 @@ export function FilamentForm() {
         Заметки
         <textarea value={form.notes ?? ''} onChange={(e) => updateField('notes', e.target.value)} rows={3} />
       </label>
+      </details>
 
       {error && <p role="alert">{error}</p>}
 

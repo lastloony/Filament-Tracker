@@ -222,6 +222,7 @@ caddy/Caddyfile
 
 # Claude Code
 CLAUDE.md
+AGENTS.md
 .claude/
 
 # SQLite volume

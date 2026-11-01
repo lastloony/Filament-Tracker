@@ -11,6 +11,7 @@ import { deleteFilament, listFilaments, updateFilament, type Filament } from '..
 import { ApiError } from '../api/client'
 import { listMaterials, type Material } from '../api/settings'
 import { ColorSwatch } from '../components/ColorSwatch'
+import { FilamentConsumption } from '../components/FilamentConsumption'
 
 const PAGE_SIZE = 50
 const SORTABLE_FIELDS = new Set(['brand', 'price', 'rating', 'weight_remaining_g', 'created_at'])
@@ -128,11 +129,11 @@ export function FilamentList() {
     }),
     columnHelper.accessor('price', {
       header: 'Цена',
-      cell: (c) => `${c.getValue()} ${c.row.original.currency}`,
+      cell: (c) => c.getValue() === null ? '—' : `${c.getValue()} ${c.row.original.currency}`,
     }),
     columnHelper.accessor('price_per_kg', {
       header: 'Цена/кг',
-      cell: (c) => `${c.getValue()} ${c.row.original.currency}`,
+      cell: (c) => c.getValue() === null ? '—' : `${c.getValue()} ${c.row.original.currency}`,
     }),
     columnHelper.accessor('rating', { header: 'Рейтинг', cell: (c) => c.getValue() ?? '—' }),
     columnHelper.accessor('vendor', { header: 'Где куплено', cell: (c) => c.getValue() ?? '—' }),
@@ -141,6 +142,7 @@ export function FilamentList() {
       header: '',
       cell: (c) => (
         <div className="row-actions">
+          <FilamentConsumption filament={c.row.original} onSaved={replaceRow} />
           <button type="button" onClick={() => navigate(`/filaments/${c.row.original.id}/edit`)}>
             Изменить
           </button>

@@ -17,7 +17,7 @@ class Filament(Base):
     color_hex: Mapped[str | None] = mapped_column(String(7))
     weight_total_g: Mapped[int]
     weight_remaining_g: Mapped[int]
-    price: Mapped[Decimal] = mapped_column(Numeric(10, 2))
+    price: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
     currency: Mapped[str] = mapped_column(String(3))
     rating: Mapped[int | None]
     vendor: Mapped[str | None] = mapped_column(String(200))

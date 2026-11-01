@@ -58,3 +58,12 @@ def update_filament(filament_id: int, data: schemas.FilamentUpdate, db: Session 
 def delete_filament(filament_id: int, db: Session = Depends(get_db)):
     filament = _get_or_404(db, filament_id)
     crud.delete_filament(db, filament)
+
+
+@router.post("/{filament_id}/consume", response_model=schemas.FilamentRead)
+def consume_filament(filament_id: int, data: schemas.FilamentConsume, db: Session = Depends(get_db)):
+    _get_or_404(db, filament_id)
+    filament = crud.consume_filament(db, filament_id, data.weight_used_g)
+    if filament is None:
+        raise HTTPException(status_code=409, detail="Недостаточно пластика на катушке. Обновите список и проверьте остаток.")
+    return filament
