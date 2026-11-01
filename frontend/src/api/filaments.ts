@@ -68,3 +68,9 @@ export function updateFilament(id: number, data: Partial<FilamentInput>): Promis
 export function deleteFilament(id: number): Promise<void> {
   return apiFetch(`/filaments/${id}`, { method: 'DELETE' })
 }
+
+export function consumeFilament(id: number, weightUsedG: number): Promise<Filament> {
+  return apiFetch(`/filaments/${id}/consume`, {
+    method: 'POST', body: JSON.stringify({ weight_used_g: weightUsedG }),
+  })
+}

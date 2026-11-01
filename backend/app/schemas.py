@@ -75,6 +75,10 @@ class FilamentUpdate(BaseModel):
         return value.strip() if isinstance(value, str) else value
 
 
+class FilamentConsume(BaseModel):
+    weight_used_g: int = Field(gt=0, strict=True)
+
+
 class FilamentRead(FilamentBase):
     model_config = ConfigDict(from_attributes=True)
 

@@ -65,6 +65,23 @@ def delete_filament(db: Session, filament: models.Filament) -> None:
     db.commit()
 
 
+def consume_filament(db: Session, filament_id: int, weight_used_g: int) -> models.Filament | None:
+    if weight_used_g <= 0:
+        raise ValueError("Расход должен быть больше нуля")
+    result = db.execute(
+        update(models.Filament)
+        .where(models.Filament.id == filament_id, models.Filament.weight_remaining_g >= weight_used_g)
+        .values(weight_remaining_g=models.Filament.weight_remaining_g - weight_used_g)
+    )
+    if result.rowcount != 1:
+        db.rollback()
+        return None
+    db.commit()
+    filament = db.get(models.Filament, filament_id)
+    db.refresh(filament)
+    return filament
+
+
 def _stats_by_field(db: Session, field) -> list[Row]:
     query = (
         select(
