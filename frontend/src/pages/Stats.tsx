@@ -3,6 +3,8 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { getByBrand, getByMaterial, getByRating, getSummary, type StatsByGroup, type StatsByRating, type StatsSummary } from '../api/stats'
 import { ApiError } from '../api/client'
 
+import { formatMoney } from '../money'
+
 const tooltipStyle = {
   background: 'var(--card-bg)',
   border: '1px solid var(--border)',
@@ -99,12 +101,12 @@ export function Stats() {
             summary.total_invested.length === 0 ? (
               '—'
             ) : summary.total_invested.length === 1 ? (
-              `${summary.total_invested[0].total} ${summary.total_invested[0].currency}`
+              `${formatMoney(summary.total_invested[0].total)} ${summary.total_invested[0].currency}`
             ) : (
               <div className="stat-tile-value-list">
                 {summary.total_invested.map((i) => (
                   <div key={i.currency}>
-                    {i.total} {i.currency}
+                    {formatMoney(i.total)} {i.currency}
                   </div>
                 ))}
               </div>
@@ -115,12 +117,12 @@ export function Stats() {
       </div>
 
       <div className="chart-grid">
-        <ChartCard title="Расходы по брендам" tableRows={brandData.map((d) => ({ label: d.name, value: d.spent.toFixed(2) }))}>
+        <ChartCard title="Расходы по брендам" tableRows={brandData.map((d) => ({ label: d.name, value: formatMoney(d.spent) }))}>
           <BarChart data={brandData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
             <CartesianGrid vertical={false} stroke="var(--border)" />
             <XAxis dataKey="name" tick={axisTick} axisLine={{ stroke: 'var(--border)' }} tickLine={false} />
             <YAxis tick={axisTick} axisLine={false} tickLine={false} />
-            <Tooltip cursor={{ fill: 'var(--border)', opacity: 0.4 }} contentStyle={tooltipStyle} formatter={(value) => [Number(value).toFixed(2), 'Потрачено']} />
+            <Tooltip cursor={{ fill: 'var(--border)', opacity: 0.4 }} contentStyle={tooltipStyle} formatter={(value) => [formatMoney(Number(value)), 'Потрачено']} />
             <Bar dataKey="spent" fill="var(--accent)" radius={[4, 4, 0, 0]} maxBarSize={24} />
           </BarChart>
         </ChartCard>

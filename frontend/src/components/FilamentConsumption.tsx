@@ -1,16 +1,16 @@
 import { useState } from 'react'
 import { consumeFilament, type Filament } from '../api/filaments'
 
-export function FilamentConsumption({ filament, onSaved }: {
-  filament: Filament; onSaved: (updated: Filament) => void
+export function FilamentConsumption({ filament, onSaved, initiallyOpen = false }: {
+  filament: Filament; onSaved: (updated: Filament) => void; initiallyOpen?: boolean
 }) {
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(initiallyOpen)
   const [grams, setGrams] = useState('')
   const [error, setError] = useState('')
   const [isSaving, setIsSaving] = useState(false)
 
   if (!isOpen) return <button type="button" disabled={filament.weight_remaining_g === 0}
-    onClick={() => { setGrams(''); setError(''); setIsOpen(true) }}>Списать расход</button>
+    onClick={() => { setGrams(''); setError(''); setIsOpen(true) }}>Добавить расход</button>
 
   const amount = Number(grams)
   const valid = Number.isSafeInteger(amount) && amount > 0 && amount <= filament.weight_remaining_g
@@ -24,7 +24,7 @@ export function FilamentConsumption({ filament, onSaved }: {
       onSaved(await consumeFilament(filament.id, amount))
       setIsOpen(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось списать расход')
+      setError(err instanceof Error ? err.message : 'Не удалось добавить расход')
     } finally {
       setIsSaving(false)
     }
@@ -34,7 +34,7 @@ export function FilamentConsumption({ filament, onSaved }: {
         autoFocus value={grams} disabled={isSaving} onChange={(e) => setGrams(e.target.value)} />
     </label>
     <small>Доступно: {filament.weight_remaining_g} г{valid ? ` · Останется: ${filament.weight_remaining_g - amount} г` : ''}</small>
-    <button type="submit" disabled={!valid || isSaving}>{isSaving ? 'Списание…' : 'Списать'}</button>
+    <button type="submit" disabled={!valid || isSaving}>{isSaving ? 'Сохранение…' : 'Добавить расход'}</button>
     <button type="button" disabled={isSaving} onClick={() => setIsOpen(false)}>Отмена</button>
     {error && <p role="alert">{error}</p>}
   </form>

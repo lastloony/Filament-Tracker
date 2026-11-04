@@ -1,5 +1,6 @@
 import { Fragment, useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { QuickConsumption } from '../components/QuickConsumption'
 import { getOverview, getOverviewByBrand, type InventoryByBrand, type InventoryOverview } from '../api/stats'
 import { listMaterials, type Material } from '../api/settings'
 import { ApiError } from '../api/client'
@@ -16,6 +17,9 @@ function formatWeight(grams: number): string {
 type ColorOption = { color: string; color_hex: string | null }
 
 export function Overview() {
+  const navigate = useNavigate()
+  const [showConsumption, setShowConsumption] = useState(false)
+  const [revision, setRevision] = useState(0)
   const [overview, setOverview] = useState<InventoryOverview | null>(null)
   const [materials, setMaterials] = useState<Material[]>([])
   const [colorOptions, setColorOptions] = useState<ColorOption[]>([])
@@ -40,15 +44,17 @@ export function Overview() {
           a.color.localeCompare(b.color),
         ),
       )
-    })
-  }, [])
+    }).catch((err) => setError(err instanceof ApiError ? err.message : 'Не удалось загрузить справочники'))
+  }, [revision])
 
   useEffect(() => {
     setError(null)
+    let cancelled = false
     getOverview({ material: materialFilter, color: colorFilter })
-      .then(setOverview)
-      .catch((err) => setError(err instanceof ApiError ? err.message : 'Не удалось загрузить остатки'))
-  }, [materialFilter, colorFilter])
+      .then((data) => { if (!cancelled) setOverview(data) })
+      .catch((err) => { if (!cancelled) setError(err instanceof ApiError ? err.message : 'Не удалось загрузить остатки') })
+    return () => { cancelled = true }
+  }, [materialFilter, colorFilter, revision])
 
   const hasFilters = materialFilter !== '' || colorFilter !== ''
 
@@ -79,7 +85,18 @@ export function Overview() {
 
   return (
     <div className="overview-page">
-      <h1>Остатки</h1>
+      <div className="list-header overview-header">
+        <h1>Остатки</h1>
+        <div className="form-actions">
+          <button type="button" onClick={() => navigate('/filaments/new')}>Добавить катушку</button>
+          <button type="button" aria-expanded={showConsumption}
+            onClick={() => setShowConsumption((open) => !open)}>Добавить расход пластика</button>
+        </div>
+      </div>
+      {showConsumption && <QuickConsumption onSaved={() => {
+        setRevision((value) => value + 1)
+        setExpandedKey(null)
+      }} />}
 
       <div className="overview-filters">
         <div className="material-tabs">

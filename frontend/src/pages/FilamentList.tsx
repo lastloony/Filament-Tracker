@@ -12,6 +12,7 @@ import { ApiError } from '../api/client'
 import { listMaterials, type Material } from '../api/settings'
 import { ColorSwatch } from '../components/ColorSwatch'
 import { FilamentConsumption } from '../components/FilamentConsumption'
+import { formatMoney } from '../money'
 
 const PAGE_SIZE = 50
 const SORTABLE_FIELDS = new Set(['brand', 'price', 'rating', 'weight_remaining_g', 'created_at'])
@@ -129,11 +130,11 @@ export function FilamentList() {
     }),
     columnHelper.accessor('price', {
       header: 'Цена',
-      cell: (c) => c.getValue() === null ? '—' : `${c.getValue()} ${c.row.original.currency}`,
+      cell: (c) => c.getValue() === null ? '—' : `${formatMoney(c.getValue()!)} ${c.row.original.currency}`,
     }),
     columnHelper.accessor('price_per_kg', {
       header: 'Цена/кг',
-      cell: (c) => c.getValue() === null ? '—' : `${c.getValue()} ${c.row.original.currency}`,
+      cell: (c) => c.getValue() === null ? '—' : `${formatMoney(c.getValue()!)} ${c.row.original.currency}`,
     }),
     columnHelper.accessor('rating', { header: 'Рейтинг', cell: (c) => c.getValue() ?? '—' }),
     columnHelper.accessor('vendor', { header: 'Где куплено', cell: (c) => c.getValue() ?? '—' }),
