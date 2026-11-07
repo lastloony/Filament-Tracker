@@ -35,11 +35,13 @@ export type InventoryByMaterialColor = {
 
 export type ReorderItem = {
   id: number
-  brand: string
+  brand: string | null
   material: string
   color: string | null
   color_hex: string | null
   remaining_g: number
+  spool_count: number
+  threshold_g: number
 }
 
 export type InventoryOverview = {

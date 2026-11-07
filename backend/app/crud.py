@@ -171,7 +171,7 @@ def inventory_by_brand(db: Session, *, material: str, color: str) -> list[Row]:
 
 def reorder_candidates(
     db: Session, *, brand: str | None = None, material: str | None = None, color: str | None = None
-) -> list[models.Filament]:
+) -> list[schemas.ReorderItem]:
     rules = list(db.execute(select(models.ReorderRule)).scalars())
     specific_thresholds = {(r.brand, r.material, r.color): r.threshold_g for r in rules if r.brand}
     general_thresholds = {(r.material, r.color): r.threshold_g for r in rules if not r.brand}
@@ -184,17 +184,39 @@ def reorder_candidates(
     if color:
         query = query.where(models.Filament.color == color)
     filaments = list(db.execute(query).scalars())
-    candidates = []
+    groups = {}
+    brand_groups = {}
     for f in filaments:
-        threshold = specific_thresholds.get((f.brand, f.material, f.color))
-        if threshold is None:
-            threshold = general_thresholds.get((f.material, f.color))
-        if threshold is None:
-            threshold = LOW_STOCK_THRESHOLD_G
-        if f.weight_remaining_g < threshold:
-            candidates.append(f)
+        # A disabled material/color is excluded even from brand-specific rules.
+        if general_thresholds.get((f.material, f.color)) == 0:
+            continue
+        groups.setdefault((f.material, f.color), []).append(f)
+        brand_groups.setdefault((f.brand, f.material, f.color), []).append(f)
 
-    candidates.sort(key=lambda f: f.weight_remaining_g)
+    candidates = []
+
+    def add_candidate(spools, scope_brand, threshold):
+        remaining = sum(f.weight_remaining_g for f in spools)
+        if remaining < threshold:
+            representative = min(spools, key=lambda f: f.id)
+            candidates.append(schemas.ReorderItem(
+                id=representative.id, brand=scope_brand,
+                material=representative.material, color=representative.color,
+                color_hex=representative.color_hex, remaining_g=remaining,
+                spool_count=len(spools), threshold_g=threshold,
+            ))
+
+    for (material_, color_), spools in groups.items():
+        # A brand-specific rule overrides the general rule for that brand.
+        # General stock still includes all brands that can cover this type/color.
+        if any((f.brand, material_, color_) not in specific_thresholds for f in spools):
+            threshold = general_thresholds.get((material_, color_), LOW_STOCK_THRESHOLD_G)
+            add_candidate(spools, brand, threshold)
+    for key, spools in brand_groups.items():
+        if key in specific_thresholds:
+            add_candidate(spools, key[0], specific_thresholds[key])
+
+    candidates.sort(key=lambda item: (item.remaining_g, item.id))
     return candidates
 
 

@@ -137,6 +137,9 @@ function ReorderRulesSection({
       <p className="overview-hint">
         Правило с производителем действует только для него; без производителя — для всех катушек этого материала и
         цвета. Если подходящего правила нет, используется общий порог 300 г.
+        Порог 0 отключает рекомендации. Отключение без производителя действует на все бренды.
+        «Рекомендовать снова» возвращает стандартный порог 300 г и сохранённые правила брендов;
+        прежний общий порог нужно задать заново.
       </p>
       <table>
         <thead>
@@ -157,10 +160,16 @@ function ReorderRulesSection({
                 {rule.color}
               </td>
               <td>{rule.brand ?? <span className="badge">любой</span>}</td>
-              <td>{rule.threshold_g} г</td>
+              <td>{rule.threshold_g === 0 ? 'Не рекомендовать' : `${rule.threshold_g} г`}</td>
               <td className="settings-action-cell">
-                <button type="button" className="link-button" onClick={() => onDelete(rule.id)}>
-                  Удалить
+                <button type="button" className="link-button" disabled={isSubmitting} onClick={async () => {
+                  setError(null)
+                  setIsSubmitting(true)
+                  try { await onDelete(rule.id) }
+                  catch (err) { setError(err instanceof ApiError ? err.message : 'Не удалось удалить правило') }
+                  finally { setIsSubmitting(false) }
+                }}>
+                  {rule.threshold_g === 0 ? 'Рекомендовать снова' : 'Удалить'}
                 </button>
               </td>
             </tr>
@@ -201,7 +210,7 @@ function ReorderRulesSection({
         </select>
         <input
           type="number"
-          min={1}
+          min={0}
           value={threshold}
           onChange={(e) => setThreshold(e.target.value)}
           placeholder="Порог, г"

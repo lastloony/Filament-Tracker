@@ -2,7 +2,7 @@ import { Fragment, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { QuickConsumption } from '../components/QuickConsumption'
 import { getOverview, getOverviewByBrand, type InventoryByBrand, type InventoryOverview } from '../api/stats'
-import { listMaterials, type Material } from '../api/settings'
+import { disableReorder, listMaterials, type Material } from '../api/settings'
 import { ApiError } from '../api/client'
 import { ColorSwatch } from '../components/ColorSwatch'
 import { ColorInventoryChart } from '../components/ColorInventoryChart'
@@ -24,6 +24,8 @@ export function Overview() {
   const [materials, setMaterials] = useState<Material[]>([])
   const [colorOptions, setColorOptions] = useState<ColorOption[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [reorderError, setReorderError] = useState<string | null>(null)
+  const [isDisabling, setIsDisabling] = useState(false)
   const [materialFilter, setMaterialFilter] = useState('')
   const [colorFilter, setColorFilter] = useState('')
 
@@ -57,6 +59,19 @@ export function Overview() {
   }, [materialFilter, colorFilter, revision])
 
   const hasFilters = materialFilter !== '' || colorFilter !== ''
+
+  async function hideRecommendation(material: string, color: string) {
+    setIsDisabling(true)
+    setReorderError(null)
+    try {
+      await disableReorder(material, color)
+      setRevision((value) => value + 1)
+    } catch (err) {
+      setReorderError(err instanceof ApiError ? err.message : 'Не удалось отключить рекомендацию')
+    } finally {
+      setIsDisabling(false)
+    }
+  }
 
   function resetFilters() {
     setMaterialFilter('')
@@ -244,6 +259,9 @@ export function Overview() {
 
         <div className="chart-card">
           <h2>Пора дозаказать</h2>
+          <p className="overview-hint">«Больше не заказывать» отключает рекомендации этого материала и цвета для всех брендов. Включить обратно можно в настройках порогов.</p>
+          {reorderError && <p role="alert">{reorderError}</p>}
+          <p className="overview-hint">Сравниваем суммарный запас материала и цвета с порогом. Правила для бренда учитывают только его катушки.</p>
           {overview.reorder.length === 0 ? (
             <p className="chart-empty">{hasFilters ? 'Под фильтр ничего не подошло' : 'Всё в достатке'}</p>
           ) : (
@@ -254,18 +272,26 @@ export function Overview() {
                   <th>Материал</th>
                   <th>Цвет</th>
                   <th>Остаток</th>
+                  <th>Порог</th>
+                  <th>Действие</th>
                 </tr>
               </thead>
               <tbody>
                 {overview.reorder.map((item) => (
-                  <tr key={item.id}>
-                    <td>{item.brand}</td>
+                  <tr key={`${item.id}|${item.brand ?? ''}`}>
+                    <td>{item.brand ?? 'Все бренды'}</td>
                     <td>{item.material}</td>
                     <td className="color-cell">
                       <ColorSwatch hex={item.color_hex} name={item.color} />
                       {item.color ?? '—'}
                     </td>
                     <td className="low-stock">{formatWeight(item.remaining_g)}</td>
+                    <td>{formatWeight(item.threshold_g)}</td>
+                    <td><button type="button" className="link-button"
+                      disabled={isDisabling || !item.color}
+                      onClick={() => { if (item.color) void hideRecommendation(item.material, item.color) }}>
+                      Больше не заказывать
+                    </button></td>
                   </tr>
                 ))}
               </tbody>

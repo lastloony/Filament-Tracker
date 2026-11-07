@@ -49,3 +49,9 @@ export function createReorderRule(data: {
 export function deleteReorderRule(id: number): Promise<void> {
   return apiFetch(`/settings/reorder-rules/${id}`, { method: 'DELETE' })
 }
+
+export function disableReorder(material: string, color: string): Promise<ReorderRule> {
+  return apiFetch('/settings/reorder-disabled', {
+    method: 'PUT', body: JSON.stringify({ material, color }),
+  })
+}

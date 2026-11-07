@@ -155,11 +155,21 @@ class ReorderRuleBase(BaseModel):
     material: str = Field(min_length=1, max_length=50)
     color: str = Field(min_length=1, max_length=50)
     brand: str | None = Field(default=None, max_length=100)
-    threshold_g: int = Field(gt=0)
+    threshold_g: int = Field(ge=0)
 
 
 class ReorderRuleCreate(ReorderRuleBase):
     pass
+
+
+class ReorderDisable(BaseModel):
+    material: str = Field(min_length=1, max_length=50)
+    color: str = Field(min_length=1, max_length=50)
+
+    @field_validator("material", "color", mode="before")
+    @classmethod
+    def strip_value(cls, value):
+        return value.strip() if isinstance(value, str) else value
 
 
 class ReorderRuleRead(ReorderRuleBase):
@@ -209,11 +219,13 @@ class InventoryByBrand(BaseModel):
 
 class ReorderItem(BaseModel):
     id: int
-    brand: str
+    brand: str | None
     material: str
     color: str | None
     color_hex: str | None
     remaining_g: int
+    spool_count: int
+    threshold_g: int
 
 
 class InventoryOverview(BaseModel):
