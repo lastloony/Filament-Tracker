@@ -12,6 +12,7 @@ import { ApiError } from '../api/client'
 import { listMaterials, type Material } from '../api/settings'
 import { ColorSwatch } from '../components/ColorSwatch'
 import { FilamentConsumption } from '../components/FilamentConsumption'
+import { formatMoney } from '../money'
 
 const PAGE_SIZE = 50
 const SORTABLE_FIELDS = new Set(['brand', 'price', 'rating', 'weight_remaining_g', 'created_at'])
@@ -30,6 +31,12 @@ function RemainingCell({ filament, onSaved }: { filament: Filament; onSaved: (up
   }
 
   async function save() {
+    const remaining = Number(value)
+    if (value.trim() === '' || !Number.isSafeInteger(remaining) || remaining < 0 || remaining > filament.weight_total_g) {
+      setValue(String(filament.weight_remaining_g))
+      setIsEditing(false)
+      return
+    }
     setIsSaving(true)
     try {
       const updated = await updateFilament(filament.id, { weight_remaining_g: Number(value) })
@@ -46,6 +53,7 @@ function RemainingCell({ filament, onSaved }: { filament: Filament; onSaved: (up
     <input
       type="number"
       min={0}
+      max={filament.weight_total_g}
       autoFocus
       value={value}
       disabled={isSaving}
@@ -129,11 +137,11 @@ export function FilamentList() {
     }),
     columnHelper.accessor('price', {
       header: 'Цена',
-      cell: (c) => c.getValue() === null ? '—' : `${c.getValue()} ${c.row.original.currency}`,
+      cell: (c) => c.getValue() === null ? '—' : `${formatMoney(c.getValue()!)} ${c.row.original.currency}`,
     }),
     columnHelper.accessor('price_per_kg', {
       header: 'Цена/кг',
-      cell: (c) => c.getValue() === null ? '—' : `${c.getValue()} ${c.row.original.currency}`,
+      cell: (c) => c.getValue() === null ? '—' : `${formatMoney(c.getValue()!)} ${c.row.original.currency}`,
     }),
     columnHelper.accessor('rating', { header: 'Рейтинг', cell: (c) => c.getValue() ?? '—' }),
     columnHelper.accessor('vendor', { header: 'Где куплено', cell: (c) => c.getValue() ?? '—' }),

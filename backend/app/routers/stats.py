@@ -63,17 +63,7 @@ def overview(
                 db, brand=brand, material=material, color=color
             )
         ],
-        reorder=[
-            schemas.ReorderItem(
-                id=f.id,
-                brand=f.brand,
-                material=f.material,
-                color=f.color,
-                color_hex=f.color_hex,
-                remaining_g=f.weight_remaining_g,
-            )
-            for f in crud.reorder_candidates(db, brand=brand, material=material, color=color)
-        ],
+        reorder=crud.reorder_candidates(db, brand=brand, material=material, color=color),
     )
 
 

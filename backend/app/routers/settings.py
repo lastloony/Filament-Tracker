@@ -79,3 +79,15 @@ def delete_reorder_rule(rule_id: int, db: Session = Depends(get_db)):
     if rule is None:
         raise HTTPException(status_code=404, detail="Rule not found")
     crud.delete_reorder_rule(db, rule)
+
+
+@router.put("/reorder-disabled", response_model=schemas.ReorderRuleRead)
+def disable_reorder(data: schemas.ReorderDisable, db: Session = Depends(get_db)):
+    rule = crud.find_reorder_rule(db, material=data.material, color=data.color, brand=None)
+    if rule is None:
+        return crud.create_reorder_rule(db, schemas.ReorderRuleCreate(
+            material=data.material, color=data.color, threshold_g=0))
+    rule.threshold_g = 0
+    db.commit()
+    db.refresh(rule)
+    return rule

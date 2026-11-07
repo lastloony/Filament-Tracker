@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from decimal import Decimal
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator, model_validator
 
 DEFAULT_BRAND = "Нонейм"
 
@@ -37,6 +37,12 @@ class FilamentBase(BaseModel):
 class FilamentCreate(FilamentBase):
     color: str = Field(min_length=1, max_length=50)
 
+    @model_validator(mode="after")
+    def validate_weights(self):
+        if self.weight_remaining_g > self.weight_total_g:
+            raise ValueError("Остаток не может превышать вес катушки")
+        return self
+
     @field_validator("brand", mode="before")
     @classmethod
     def default_brand(cls, value):
@@ -61,6 +67,13 @@ class FilamentUpdate(BaseModel):
     vendor: str | None = None
     purchase_date: date | None = None
     notes: str | None = None
+
+    @field_validator("weight_total_g", "weight_remaining_g")
+    @classmethod
+    def require_weight(cls, value):
+        if value is None:
+            raise ValueError("Укажите вес в граммах")
+        return value
 
     @field_validator("brand", mode="before")
     @classmethod
@@ -142,11 +155,21 @@ class ReorderRuleBase(BaseModel):
     material: str = Field(min_length=1, max_length=50)
     color: str = Field(min_length=1, max_length=50)
     brand: str | None = Field(default=None, max_length=100)
-    threshold_g: int = Field(gt=0)
+    threshold_g: int = Field(ge=0)
 
 
 class ReorderRuleCreate(ReorderRuleBase):
     pass
+
+
+class ReorderDisable(BaseModel):
+    material: str = Field(min_length=1, max_length=50)
+    color: str = Field(min_length=1, max_length=50)
+
+    @field_validator("material", "color", mode="before")
+    @classmethod
+    def strip_value(cls, value):
+        return value.strip() if isinstance(value, str) else value
 
 
 class ReorderRuleRead(ReorderRuleBase):
@@ -196,11 +219,13 @@ class InventoryByBrand(BaseModel):
 
 class ReorderItem(BaseModel):
     id: int
-    brand: str
+    brand: str | None
     material: str
     color: str | None
     color_hex: str | None
     remaining_g: int
+    spool_count: int
+    threshold_g: int
 
 
 class InventoryOverview(BaseModel):

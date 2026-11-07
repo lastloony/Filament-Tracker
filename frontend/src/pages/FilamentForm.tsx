@@ -138,18 +138,19 @@ export function FilamentForm() {
 
       <label>
         Материал
-        <input
-          type="text"
-          list="materials"
+        <select
           value={form.material}
           onChange={(e) => updateField('material', e.target.value)}
           required
-        />
-        <datalist id="materials">
+        >
+          <option value="" disabled>Выберите материал</option>
+          {form.material && !materials.some((m) => m.name === form.material) && (
+            <option value={form.material}>{form.material}</option>
+          )}
           {materials.map((m) => (
-            <option key={m.id} value={m.name} />
+            <option key={m.id} value={m.name}>{m.name}</option>
           ))}
-        </datalist>
+        </select>
       </label>
 
       <label>
@@ -221,6 +222,7 @@ export function FilamentForm() {
             type="number"
             min={0}
             value={form.weight_remaining_g}
+            max={form.weight_total_g}
             onChange={(e) => {
               remainingEdited.current = true
               updateField('weight_remaining_g', Number(e.target.value))
