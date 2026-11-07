@@ -222,6 +222,7 @@ export function FilamentForm() {
             type="number"
             min={0}
             value={form.weight_remaining_g}
+            max={form.weight_total_g}
             onChange={(e) => {
               remainingEdited.current = true
               updateField('weight_remaining_g', Number(e.target.value))

@@ -51,6 +51,11 @@ def get_filament(filament_id: int, db: Session = Depends(get_db)):
 @router.patch("/{filament_id}", response_model=schemas.FilamentRead)
 def update_filament(filament_id: int, data: schemas.FilamentUpdate, db: Session = Depends(get_db)):
     filament = _get_or_404(db, filament_id)
+    weights = data.model_dump(exclude_unset=True)
+    total = weights.get("weight_total_g", filament.weight_total_g)
+    remaining = weights.get("weight_remaining_g", filament.weight_remaining_g)
+    if remaining > total:
+        raise HTTPException(status_code=422, detail="Остаток не может превышать вес катушки")
     return crud.update_filament(db, filament, data)
 
 
