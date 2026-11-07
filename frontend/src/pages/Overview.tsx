@@ -257,7 +257,7 @@ export function Overview() {
           </table>
         </div>
 
-        <div className="chart-card">
+        <div className="chart-card reorder-card">
           <h2>Пора дозаказать</h2>
           <p className="overview-hint">«Больше не заказывать» отключает рекомендации этого материала и цвета для всех брендов. Включить обратно можно в настройках порогов.</p>
           {reorderError && <p role="alert">{reorderError}</p>}
