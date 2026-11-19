@@ -72,3 +72,11 @@ def consume_filament(filament_id: int, data: schemas.FilamentConsume, db: Sessio
     if filament is None:
         raise HTTPException(status_code=409, detail="Недостаточно пластика на катушке. Обновите список и проверьте остаток.")
     return filament
+
+
+@router.post("/{filament_id}/consume-all", response_model=schemas.FilamentRead)
+def consume_all_filament(filament_id: int, db: Session = Depends(get_db)):
+    filament = crud.consume_filament(db, filament_id, weight_used_g=None)
+    if filament is None:
+        raise HTTPException(status_code=404, detail="Filament not found")
+    return filament
