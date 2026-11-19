@@ -1,6 +1,6 @@
 [package]
 name = "filament-tracker-desktop"
-version = "0.4.7"
+version = "0.4.8"
 description = "Local Filament Tracker desktop shell"
 edition = "2021"
 

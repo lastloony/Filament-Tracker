@@ -26,7 +26,7 @@ export function Overview() {
   const [error, setError] = useState<string | null>(null)
   const [reorderError, setReorderError] = useState<string | null>(null)
   const [isDisabling, setIsDisabling] = useState(false)
-  const [materialFilter, setMaterialFilter] = useState('')
+  const [selectedMaterials, setSelectedMaterials] = useState<string[]>([])
   const [colorFilter, setColorFilter] = useState('')
 
   const [expandedKey, setExpandedKey] = useState<string | null>(null)
@@ -52,13 +52,14 @@ export function Overview() {
   useEffect(() => {
     setError(null)
     let cancelled = false
-    getOverview({ material: materialFilter, color: colorFilter })
+    getOverview({ color: colorFilter })
       .then((data) => { if (!cancelled) setOverview(data) })
       .catch((err) => { if (!cancelled) setError(err instanceof ApiError ? err.message : 'Не удалось загрузить остатки') })
     return () => { cancelled = true }
-  }, [materialFilter, colorFilter, revision])
+  }, [colorFilter, revision])
 
-  const hasFilters = materialFilter !== '' || colorFilter !== ''
+  const allMaterials = selectedMaterials.length === 0
+  const hasFilters = !allMaterials || colorFilter !== ''
 
   async function hideRecommendation(material: string, color: string) {
     setIsDisabling(true)
@@ -74,8 +75,14 @@ export function Overview() {
   }
 
   function resetFilters() {
-    setMaterialFilter('')
+    setSelectedMaterials([])
     setColorFilter('')
+  }
+
+  function toggleMaterial(material: string) {
+    setSelectedMaterials((selected) => selected.includes(material)
+      ? selected.filter((name) => name !== material)
+      : [...selected, material])
   }
 
   function toggleBrandBreakdown(material: string, color: string | null) {
@@ -96,7 +103,9 @@ export function Overview() {
   if (error) return <p role="alert">{error}</p>
   if (!overview) return <p>Загрузка...</p>
 
-  const totalGrams = overview.by_material_color.reduce((sum, row) => sum + row.remaining_g, 0)
+  const inventory = overview.by_material_color.filter((row) => allMaterials || selectedMaterials.includes(row.material))
+  const reorder = overview.reorder.filter((row) => allMaterials || selectedMaterials.includes(row.material))
+  const totalGrams = inventory.reduce((sum, row) => sum + row.remaining_g, 0)
 
   return (
     <div className="overview-page">
@@ -114,11 +123,12 @@ export function Overview() {
       }} />}
 
       <div className="overview-filters">
-        <div className="material-tabs">
+        <div className="material-tabs" role="group" aria-label="Типы пластика">
           <button
             type="button"
-            className={`material-tab${materialFilter === '' ? ' selected' : ''}`}
-            onClick={() => setMaterialFilter('')}
+            aria-pressed={allMaterials}
+            className={`material-tab${allMaterials ? ' selected' : ''}`}
+            onClick={() => setSelectedMaterials([])}
           >
             Все материалы
           </button>
@@ -126,8 +136,9 @@ export function Overview() {
             <button
               key={m.id}
               type="button"
-              className={`material-tab${materialFilter === m.name ? ' selected' : ''}`}
-              onClick={() => setMaterialFilter(materialFilter === m.name ? '' : m.name)}
+              aria-pressed={selectedMaterials.includes(m.name)}
+              className={`material-tab${selectedMaterials.includes(m.name) ? ' selected' : ''}`}
+              onClick={() => toggleMaterial(m.name)}
             >
               {m.name}
             </button>
@@ -174,15 +185,15 @@ export function Overview() {
         </div>
         <div className="stat-tile">
           <div className="stat-tile-label">Комбинаций тип/цвет</div>
-          <div className="stat-tile-value">{overview.by_material_color.length}</div>
+          <div className="stat-tile-value">{inventory.length}</div>
         </div>
         <div className="stat-tile">
           <div className="stat-tile-label">Пора дозаказать</div>
-          <div className="stat-tile-value">{overview.reorder.length}</div>
+          <div className="stat-tile-value">{reorder.length}</div>
         </div>
       </div>
 
-      <ColorInventoryChart rows={overview.by_material_color} filtered={hasFilters} />
+      <ColorInventoryChart rows={inventory} filtered={hasFilters} />
 
       <div className="chart-grid">
         <div className="chart-card">
@@ -198,7 +209,7 @@ export function Overview() {
               </tr>
             </thead>
             <tbody>
-              {overview.by_material_color.map((row) => {
+              {inventory.map((row) => {
                 const key = `${row.material}|${row.color ?? ''}`
                 const isExpanded = expandedKey === key
                 return (
@@ -246,7 +257,7 @@ export function Overview() {
                   </Fragment>
                 )
               })}
-              {overview.by_material_color.length === 0 && (
+              {inventory.length === 0 && (
                 <tr>
                   <td colSpan={4} className="chart-empty">
                     {hasFilters ? 'Под фильтр ничего не подошло' : 'Пока нет данных'}
@@ -262,7 +273,7 @@ export function Overview() {
           <p className="overview-hint">«Больше не заказывать» отключает рекомендации этого материала и цвета для всех брендов. Включить обратно можно в настройках порогов.</p>
           {reorderError && <p role="alert">{reorderError}</p>}
           <p className="overview-hint">Сравниваем суммарный запас материала и цвета с порогом. Правила для бренда учитывают только его катушки.</p>
-          {overview.reorder.length === 0 ? (
+          {reorder.length === 0 ? (
             <p className="chart-empty">{hasFilters ? 'Под фильтр ничего не подошло' : 'Всё в достатке'}</p>
           ) : (
             <table>
@@ -277,7 +288,7 @@ export function Overview() {
                 </tr>
               </thead>
               <tbody>
-                {overview.reorder.map((item) => (
+                {reorder.map((item) => (
                   <tr key={`${item.id}|${item.brand ?? ''}`}>
                     <td>{item.brand ?? 'Все бренды'}</td>
                     <td>{item.material}</td>
