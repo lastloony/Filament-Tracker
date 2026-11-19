@@ -168,6 +168,7 @@ export function FilamentList() {
     state: { sorting },
     onSortingChange: setSorting,
     manualSorting: true,
+    getRowId: (row) => String(row.id),
     getCoreRowModel: getCoreRowModel(),
   })
 

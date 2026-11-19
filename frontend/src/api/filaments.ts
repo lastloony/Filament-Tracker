@@ -74,3 +74,7 @@ export function consumeFilament(id: number, weightUsedG: number): Promise<Filame
     method: 'POST', body: JSON.stringify({ weight_used_g: weightUsedG }),
   })
 }
+
+export function consumeAllFilament(id: number): Promise<Filament> {
+  return apiFetch(`/filaments/${id}/consume-all`, { method: 'POST' })
+}

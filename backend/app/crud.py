@@ -65,20 +65,21 @@ def delete_filament(db: Session, filament: models.Filament) -> None:
     db.commit()
 
 
-def consume_filament(db: Session, filament_id: int, weight_used_g: int) -> models.Filament | None:
-    if weight_used_g <= 0:
+def consume_filament(db: Session, filament_id: int, weight_used_g: int | None) -> models.Filament | None:
+    if weight_used_g is not None and weight_used_g <= 0:
         raise ValueError("Расход должен быть больше нуля")
-    result = db.execute(
-        update(models.Filament)
-        .where(models.Filament.id == filament_id, models.Filament.weight_remaining_g >= weight_used_g)
-        .values(weight_remaining_g=models.Filament.weight_remaining_g - weight_used_g)
-    )
-    if result.rowcount != 1:
+    query = update(models.Filament).where(models.Filament.id == filament_id)
+    if weight_used_g is None:
+        query = query.values(weight_remaining_g=0)
+    else:
+        remaining = models.Filament.weight_remaining_g
+        query = query.where(remaining >= weight_used_g).values(weight_remaining_g=remaining - weight_used_g)
+
+    filament = db.scalars(query.returning(models.Filament), execution_options={"populate_existing": True}).one_or_none()
+    if filament is None:
         db.rollback()
         return None
     db.commit()
-    filament = db.get(models.Filament, filament_id)
-    db.refresh(filament)
     return filament
 
 
@@ -142,7 +143,7 @@ def inventory_by_material_color(
         func.max(models.Filament.color_hex),
         func.sum(models.Filament.weight_remaining_g),
         func.count(models.Filament.id),
-    )
+    ).where(models.Filament.weight_remaining_g > 0)
     if brand:
         query = query.where(models.Filament.brand == brand)
     if material:
@@ -162,7 +163,11 @@ def inventory_by_brand(db: Session, *, material: str, color: str) -> list[Row]:
             func.sum(models.Filament.weight_remaining_g),
             func.count(models.Filament.id),
         )
-        .where(models.Filament.material == material, models.Filament.color == color)
+        .where(
+            models.Filament.material == material,
+            models.Filament.color == color,
+            models.Filament.weight_remaining_g > 0,
+        )
         .group_by(models.Filament.brand)
         .order_by(models.Filament.brand)
     )
@@ -203,7 +208,7 @@ def reorder_candidates(
                 id=representative.id, brand=scope_brand,
                 material=representative.material, color=representative.color,
                 color_hex=representative.color_hex, remaining_g=remaining,
-                spool_count=len(spools), threshold_g=threshold,
+                spool_count=sum(f.weight_remaining_g > 0 for f in spools), threshold_g=threshold,
             ))
 
     for (material_, color_), spools in groups.items():
